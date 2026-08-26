@@ -1,0 +1,159 @@
+import { User, Proforma, AuditLog } from './types';
+
+export const MOCK_USERS: (User & { password: string })[] = [
+  { id: '1', email: 'analista@starken.cl', password: 'Analista123', role: 'Analista', name: 'Ana Valenzuela', requires2FA: false },
+  { id: '2', email: 'jefatura@starken.cl', password: 'Jefatura123', role: 'Jefatura', name: 'Carlos Muñoz', requires2FA: true },
+  { id: '3', email: 'admin@starken.cl', password: 'Admin123', role: 'Administrador', name: 'Luis Herrera', requires2FA: true },
+  { id: '4', email: 'gerencia@starken.cl', password: 'Gerencia123', role: 'Gerencia', name: 'Patricia Ríos', requires2FA: true },
+];
+
+export const DEMO_2FA_CODE = '123456';
+
+export const MOCK_PROFORMAS: Proforma[] = [
+  {
+    id: 'PF-2026-0204',
+    cliente: 'Retail Logistics Chile S.A.',
+    rut: '76.452.120-K',
+    cuentaCorrienteId: 'CTA-001',
+    monto: 6800000,
+    montoFormatted: '$6.800.000',
+    estado: 'Rechazada v1',
+    fecha: '24/08/2026 10:15',
+    tipoAcuerdo: 'Tarifa diferenciada por SKU',
+    conteoRechazos: 1,
+    respaldoCorreo: 'correo_rechazo_retail_logistics.png',
+    historialVersiones: [
+      {
+        version: 'v1',
+        fechaCreacion: '24/08/2026 10:15',
+        fechaRechazo: '25/08/2026 09:00',
+        motivo: 'Diferencia en recubitaje / medidas de SKUs',
+        monto: 6800000,
+        respaldoCorreoUrl: '/demo_email_rechazado.png',
+      },
+    ],
+  },
+  {
+    id: 'PF-2025-0143',
+    cliente: 'Logística Pacífico S.A.',
+    rut: '76.123.456-7',
+    cuentaCorrienteId: 'CTA-9021',
+    monto: 4850000,
+    montoFormatted: '$4.850.000',
+    estado: 'Aprobada por Cliente',
+    fecha: '21/07/2025 09:30',
+    tipoAcuerdo: 'Tarifa diferenciada',
+    conteoRechazos: 0,
+    respaldoCorreo: 'correo_aprobacion_logistica_pacifico.png',
+    historialVersiones: [
+      {
+        version: 'v1',
+        fechaCreacion: '21/07/2025 09:30',
+        fechaAprobacion: '21/07/2025 14:15',
+        monto: 4850000,
+        respaldoCorreoUrl: '/demo_email_aprobado.png',
+      },
+    ],
+  },
+  {
+    id: 'PF-2025-0142',
+    cliente: 'Trans-Andes Cargo Ltda.',
+    rut: '77.890.123-4',
+    cuentaCorrienteId: 'CTA-4410',
+    monto: 2310000,
+    montoFormatted: '$2.310.000',
+    estado: 'Pendiente',
+    fecha: '21/07/2025 11:15',
+    tipoAcuerdo: 'Descuento volumétrico',
+    conteoRechazos: 0,
+    historialVersiones: [
+      {
+        version: 'v1',
+        fechaCreacion: '21/07/2025 11:15',
+        monto: 2310000,
+      },
+    ],
+  },
+  {
+    id: 'PF-2025-0141',
+    cliente: 'Distribuidora Sur S.A.',
+    rut: '96.543.210-9',
+    cuentaCorrienteId: 'CTA-8801',
+    monto: 7120000,
+    montoFormatted: '$7.120.000',
+    estado: 'Rechazada v1',
+    fecha: '20/07/2025 16:45',
+    tipoAcuerdo: 'Acuerdo marco',
+    conteoRechazos: 1,
+    respaldoCorreo: 'correo_rechazo_distribuidora_sur.png',
+    historialVersiones: [
+      {
+        version: 'v1',
+        fechaCreacion: '20/07/2025 16:45',
+        fechaRechazo: '21/07/2025 10:20',
+        motivo: 'Inconsistencia en Tarifas / Descuentos negociados',
+        monto: 7120000,
+        respaldoCorreoUrl: '/demo_email_rechazado.png',
+      },
+    ],
+  },
+  {
+    id: 'PF-2025-0140',
+    cliente: 'MegaStore Chile S.A.C.',
+    rut: '78.456.789-1',
+    cuentaCorrienteId: 'CTA-3011',
+    monto: 1980000,
+    montoFormatted: '$1.980.000',
+    estado: 'Derivada a CAM',
+    fecha: '20/07/2025 14:10',
+    tipoAcuerdo: 'Tarifa especial regional',
+    conteoRechazos: 2,
+    respaldoCorreo: 'correo_segundo_rechazo_megastore.png',
+    historialVersiones: [
+      {
+        version: 'v1',
+        fechaCreacion: '18/07/2025 10:00',
+        fechaRechazo: '19/07/2025 11:30',
+        motivo: 'Diferencia en recubitaje / medidas de SKUs',
+        monto: 2200000,
+        respaldoCorreoUrl: '/demo_email_rechazado_v1.png',
+      },
+      {
+        version: 'v2',
+        fechaCreacion: '19/07/2025 15:40',
+        fechaRechazo: '20/07/2025 14:10',
+        motivo: 'Error en la selección de Cuentas Corrientes',
+        monto: 1980000,
+        respaldoCorreoUrl: '/demo_email_rechazado_v2.png',
+      },
+    ],
+  },
+  {
+    id: 'PF-2025-0139',
+    cliente: 'Importadora Bello Ltda.',
+    rut: '79.111.222-3',
+    cuentaCorrienteId: 'CTA-1002',
+    monto: 3440000,
+    montoFormatted: '$3.440.000',
+    estado: 'Pendiente',
+    fecha: '19/07/2025 17:05',
+    tipoAcuerdo: 'Tarifa diferenciada',
+    conteoRechazos: 0,
+    historialVersiones: [
+      {
+        version: 'v1',
+        fechaCreacion: '19/07/2025 17:05',
+        monto: 3440000,
+      },
+    ],
+  },
+];
+
+export const MOCK_AUDIT: AuditLog[] = [
+  { id: 'a1', ts: '21/07/2025 16:10:32', usuario: 'Ana Valenzuela', rol: 'Analista', accion: 'Creación', recurso: 'PF-2025-0143', ip: '10.0.1.45' },
+  { id: 'a2', ts: '21/07/2025 15:58:10', usuario: 'Carlos Muñoz', rol: 'Jefatura', accion: 'Aprobación', recurso: 'PF-2025-0141', ip: '10.0.2.12' },
+  { id: 'a3', ts: '21/07/2025 14:22:05', usuario: 'Ana Valenzuela', rol: 'Analista', accion: 'Creación', recurso: 'PF-2025-0142', ip: '10.0.1.45' },
+  { id: 'a4', ts: '21/07/2025 13:01:44', usuario: 'Carlos Muñoz', rol: 'Jefatura', accion: 'Rechazo', recurso: 'PF-2025-0140', ip: '10.0.2.12' },
+  { id: 'a5', ts: '21/07/2025 09:15:00', usuario: 'Luis Herrera', rol: 'Administrador', accion: 'Login', recurso: '—', ip: '10.0.3.88' },
+  { id: 'a6', ts: '20/07/2025 18:45:30', usuario: 'Patricia Ríos', rol: 'Gerencia', accion: 'Login', recurso: '—', ip: '10.0.4.01' },
+];
