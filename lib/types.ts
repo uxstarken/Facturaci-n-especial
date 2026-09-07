@@ -18,7 +18,24 @@ export type ProformaEstado =
   | 'Rechazada v1'
   | 'Rechazada v2'
   | 'Derivada a CAM'
-  | 'Enviado a Pricing';
+  | 'Enviado a Pricing'
+  | 'Tarifas Corregidas por Pricing';
+
+export type VersionProforma = 'v1' | 'v2' | 'v3';
+
+export type EstadoSupervision =
+  | 'Pendiente_Autorizacion' // Analista solicitó V°B° para esta versión
+  | 'Autorizada'             // Supervisor/Jefatura autorizó el envío
+  | 'Devuelta_Analista'      // Supervisor devolvió con observaciones
+  | 'Pricing_Resuelto'       // Pricing corrigió tarifas; analista debe recalcular
+  | 'No_Requiere';           // V1 inicial o aprobada
+
+export type EstadoComercial =
+  | 'Borrador'
+  | 'Enviada_Cliente'
+  | 'Aprobada_Cliente'
+  | 'Rechazada_Cliente'
+  | 'Derivada_CAM';
 
 export interface VersionHistoryItem {
   version: 'v1' | 'v2' | 'v3';
@@ -29,6 +46,9 @@ export interface VersionHistoryItem {
   respaldoCorreoUrl?: string;
   monto: number;
   estado?: string;
+  estadoSupervision?: EstadoSupervision;
+  aprobadoPorSupervisor?: string;
+  fechaSupervision?: string;
 }
 
 export interface Proforma {
@@ -40,6 +60,9 @@ export interface Proforma {
   monto: number;
   montoFormatted: string;
   estado: ProformaEstado;
+  versionActual?: VersionProforma;
+  estadoSupervision?: EstadoSupervision;
+  estadoComercial?: EstadoComercial;
   fecha: string;
   tipoAcuerdo: string;
   conteoRechazos?: number;

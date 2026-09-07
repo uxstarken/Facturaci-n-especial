@@ -203,10 +203,6 @@ const MOCK_SOLICITUDES_INICIALES: SolicitudAprobacion[] = [
 const MOTIVOS_RECHAZO_PREDETERMINADOS = [
   'Inconsistencia en Tarifas / Descuentos negociados',
   'Diferencia en recubitaje / medidas de SKUs',
-  'Falta documentación o respaldo de cliente',
-  'Error en la selección de Cuentas Corrientes',
-  'Solicitud duplicada o emitida por error',
-  'Otro motivo (Especificar en observaciones)',
 ];
 
 export default function AprobacionesPage() {

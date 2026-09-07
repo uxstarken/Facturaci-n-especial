@@ -33,6 +33,7 @@ import {
   Filter,
   Eye,
   ChevronDown,
+  UserCheck,
 } from 'lucide-react';
 import { useTheme } from '@/context/theme-context';
 import { useToast } from '@/context/toast-context';
@@ -70,11 +71,13 @@ export interface SkuResolutionItem {
     confianzaPorcentaje: number;
   };
 
-  // Tier 3: Manual con Evidencia
+  // Tier 3: Manual con Evidencia o Ajuste por Objeción
   evidenciaManual?: {
-    urlProveedor: string;
-    screenshotUrl: string;
-    nombreArchivo: string;
+    sinEvidencia?: boolean;
+    motivoSinEvidencia?: string;
+    urlProveedor?: string;
+    screenshotUrl?: string;
+    nombreArchivo?: string;
   };
 
   // Datos finales verificados y estado
@@ -190,7 +193,6 @@ export default function EditarProformaPage() {
   // LISTADO DE SKUs CON SU ESTADO DE VALIDACIÓN
   const [skusList, setSkusList] = useState<SkuResolutionItem[]>(MOCK_SKUS_INITIAL);
   const [activeTab, setActiveTab] = useState<'todos' | 'accion' | 'ia' | 'manual' | 'historico'>('todos');
-  const [viewMode, setViewMode] = useState<'skus' | 'ofs'>('skus');
   const [searchTerm, setSearchTerm] = useState('');
 
   // MODAL PARA REVISAR / EDITAR SUGERENCIA IA
@@ -202,6 +204,8 @@ export default function EditarProformaPage() {
 
   // MODAL PARA ADJUNTAR EVIDENCIA MANUAL (TIER 3)
   const [manualEvidenceItem, setManualEvidenceItem] = useState<SkuResolutionItem | null>(null);
+  const [sinEvidenciaEncontrada, setSinEvidenciaEncontrada] = useState<boolean>(false);
+  const [motivoSinEvidencia, setMotivoSinEvidencia] = useState<string>('');
   const [manualUrl, setManualUrl] = useState<string>('');
   const [manualFile, setManualFile] = useState<File | null>(null);
   const [manualFilePreview, setManualFilePreview] = useState<string | null>(null);
@@ -214,16 +218,20 @@ export default function EditarProformaPage() {
   const montoOriginal = 6800000;
   const montoAjustado = 6560000;
 
-  // CÁLCULO DE PROGRESO DE VALIDACIÓN
+  // CÁLCULO DE PROGRESO DE VALIDACIÓN (SKUs y OFs)
   const totalSkus = skusList.length;
   const skusValidados = skusList.filter(
     (s) => s.estadoValidacion === 'Validado_Auto' || s.estadoValidacion === 'Validado_Humano'
   ).length;
-  const porcentajeProgreso = Math.round((skusValidados / totalSkus) * 100);
   const todoValidado = skusValidados === totalSkus;
 
-  // TOTAL DE OFS INVOLUCRADAS
+  // TOTAL DE OFS Y OFS VALIDADAS
   const totalOfsCount = skusList.reduce((acc, s) => acc + s.totalOfs, 0);
+  const ofsValidadas = skusList
+    .filter((s) => s.estadoValidacion === 'Validado_Auto' || s.estadoValidacion === 'Validado_Humano')
+    .reduce((acc, s) => acc + s.totalOfs, 0);
+  const ofsPendientes = totalOfsCount - ofsValidadas;
+  const porcentajeOfs = Math.round((ofsValidadas / totalOfsCount) * 100);
 
   const handleDownloadPlantilla = () => {
     const header = 'OF,SKU,Descripcion,Peso_Declarado_kg,Largo_cm,Ancho_cm,Alto_cm,Total_OFs_Lote\n';
@@ -290,6 +298,7 @@ export default function EditarProformaPage() {
           ? {
               ...s,
               estadoValidacion: 'Validado_Humano',
+              modificadoPorAnalista: false,
               pesoFinalKg: s.datosIa?.pesoKg || s.pesoFinalKg,
               dimensionesFinalesCm: s.datosIa?.dimensionesCm || s.dimensionesFinalesCm,
             }
@@ -297,20 +306,20 @@ export default function EditarProformaPage() {
       )
     );
     showToast(
-      `Sugerencia de IA aprobada para ${item.sku}. Se aplicó a las ${item.totalOfs} OFs del lote.`,
+      `Sugerencia de IA aceptada directamente para ${item.sku}. Se aplicó a las ${item.totalOfs} OFs del lote.`,
       'success',
       4500,
-      'SKU Validado con Éxito'
+      'Validado por IA (Sin Modificación)'
     );
   };
 
   // ACCIÓN 2: ABRIR MODAL PARA MODIFICAR DATOS DE IA
   const handleOpenEditIaModal = (item: SkuResolutionItem) => {
     setEditingIaItem(item);
-    setIaFormPeso(item.datosIa?.pesoKg || item.pesoDeclaradoKg);
-    setIaFormLargo(item.datosIa?.dimensionesCm.largo || item.dimensionesDeclaradasCm.largo);
-    setIaFormAncho(item.datosIa?.dimensionesCm.ancho || item.dimensionesDeclaradasCm.ancho);
-    setIaFormAlto(item.datosIa?.dimensionesCm.alto || item.dimensionesDeclaradasCm.alto);
+    setIaFormPeso(item.pesoFinalKg || item.datosIa?.pesoKg || item.pesoDeclaradoKg);
+    setIaFormLargo(item.dimensionesFinalesCm?.largo || item.datosIa?.dimensionesCm.largo || item.dimensionesDeclaradasCm.largo);
+    setIaFormAncho(item.dimensionesFinalesCm?.ancho || item.datosIa?.dimensionesCm.ancho || item.dimensionesDeclaradasCm.ancho);
+    setIaFormAlto(item.dimensionesFinalesCm?.alto || item.datosIa?.dimensionesCm.alto || item.dimensionesDeclaradasCm.alto);
   };
 
   const handleSaveEditedIa = () => {
@@ -334,16 +343,22 @@ export default function EditarProformaPage() {
     );
     setEditingIaItem(null);
     showToast(
-      `Medidas ajustadas manualmente para ${editingIaItem.sku}. Actualizadas ${editingIaItem.totalOfs} OFs.`,
+      `Medidas modificadas manualmente por analista para ${editingIaItem.sku}. Registrado en auditoría como cambio manual sobre IA (${editingIaItem.totalOfs} OFs).`,
       'success',
-      4500,
-      'Ajuste Manual Guardado'
+      5000,
+      'Modificación Manual Registrada'
     );
   };
 
   // ACCIÓN 3: ABRIR MODAL DE EVIDENCIA MANUAL (TIER 3)
   const handleOpenManualEvidenceModal = (item: SkuResolutionItem) => {
     setManualEvidenceItem(item);
+    const isSinEv = item.evidenciaManual?.sinEvidencia || false;
+    setSinEvidenciaEncontrada(isSinEv);
+    setMotivoSinEvidencia(
+      item.evidenciaManual?.motivoSinEvidencia ||
+        'No se encontró ficha técnica web pública. Se aceptan medidas según objeción del cliente.'
+    );
     setManualUrl(item.evidenciaManual?.urlProveedor || 'https://tienda-oficial.cl/producto/' + item.sku.toLowerCase());
     setManualFilePreview(item.evidenciaManual?.screenshotUrl || null);
     setManualFormPeso(item.pesoFinalKg || item.pesoDeclaradoKg);
@@ -352,15 +367,27 @@ export default function EditarProformaPage() {
     setManualFormAlto(item.dimensionesFinalesCm.alto || item.dimensionesDeclaradasCm.alto);
   };
 
+  const handleApplyDeclaradasCliente = () => {
+    if (!manualEvidenceItem) return;
+    setManualFormPeso(manualEvidenceItem.pesoDeclaradoKg);
+    setManualFormLargo(manualEvidenceItem.dimensionesDeclaradasCm.largo);
+    setManualFormAncho(manualEvidenceItem.dimensionesDeclaradasCm.ancho);
+    setManualFormAlto(manualEvidenceItem.dimensionesDeclaradasCm.alto);
+    showToast('Medidas declaradas por el cliente cargadas.', 'info', 2500);
+  };
+
   const handleSaveManualEvidence = () => {
     if (!manualEvidenceItem) return;
-    if (!manualUrl.trim()) {
-      showToast('Por favor ingresa la URL de la página o ficha técnica del proveedor.', 'warning');
-      return;
-    }
-    if (!manualFilePreview && !manualFile) {
-      showToast('Debes adjuntar o usar una captura de respaldo de la ficha técnica.', 'warning');
-      return;
+
+    if (!sinEvidenciaEncontrada) {
+      if (!manualUrl.trim()) {
+        showToast('Por favor ingresa la URL de la página o ficha técnica del proveedor.', 'warning');
+        return;
+      }
+      if (!manualFilePreview && !manualFile) {
+        showToast('Debes adjuntar o usar una captura de respaldo de la ficha técnica.', 'warning');
+        return;
+      }
     }
 
     setSkusList((prev) =>
@@ -369,11 +396,21 @@ export default function EditarProformaPage() {
           ? {
               ...s,
               estadoValidacion: 'Validado_Humano',
-              evidenciaManual: {
-                urlProveedor: manualUrl,
-                screenshotUrl: manualFilePreview || '/demo_email_aprobado.png',
-                nombreArchivo: manualFile ? manualFile.name : 'ficha_tecnica_respaldo.png',
-              },
+              modificadoPorAnalista: true,
+              evidenciaManual: sinEvidenciaEncontrada
+                ? {
+                    sinEvidencia: true,
+                    motivoSinEvidencia: motivoSinEvidencia.trim() || 'Aceptado según objeción de cliente',
+                    urlProveedor: '',
+                    screenshotUrl: '',
+                    nombreArchivo: '',
+                  }
+                : {
+                    sinEvidencia: false,
+                    urlProveedor: manualUrl,
+                    screenshotUrl: manualFilePreview || '/demo_email_aprobado.png',
+                    nombreArchivo: manualFile ? manualFile.name : 'ficha_tecnica_respaldo.png',
+                  },
               pesoFinalKg: Number(manualFormPeso),
               dimensionesFinalesCm: {
                 largo: Number(manualFormLargo),
@@ -386,10 +423,12 @@ export default function EditarProformaPage() {
     );
     setManualEvidenceItem(null);
     showToast(
-      `Evidencia web registrada para ${manualEvidenceItem.sku}. Se aplicaron las medidas a las ${manualEvidenceItem.totalOfs} OFs.`,
+      sinEvidenciaEncontrada
+        ? `SKU ${manualEvidenceItem.sku} regularizado según objeción de cliente (${manualEvidenceItem.totalOfs} OFs actualizadas).`
+        : `Evidencia web registrada para ${manualEvidenceItem.sku}. Se aplicaron las medidas a las ${manualEvidenceItem.totalOfs} OFs.`,
       'success',
       5000,
-      'Evidencia Registrada'
+      sinEvidenciaEncontrada ? 'Ajuste s/Cliente Aplicado' : 'Evidencia Registrada'
     );
   };
 
@@ -686,65 +725,57 @@ export default function EditarProformaPage() {
       {/* PASO 2: Panel de Resolución de SKUs en 3 Tiers (SOLO VISIBLE TRAS PROCESAR) */}
       {hasProcessed && (
         <div ref={resultadoRef} className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
-          {/* Barra Superior de Métricas y Progreso */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-purple-900/10 dark:border-white/10 p-6 shadow-sm space-y-4">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <div className="space-y-1">
+          {/* Barra Superior de Métricas y Progreso (Opción 2: Foco en OFs resueltas vs pendientes) */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-purple-900/10 dark:border-white/10 p-5 shadow-sm space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-body text-gray-900 dark:text-gray-100">
-                    Resultado del Análisis y Cruzamiento por SKU
+                    Avance de Regularización de OFs
                   </span>
                   <span
-                    className={`px-2.5 py-0.5 rounded-full text-micro font-extrabold ${
+                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-micro font-extrabold ${
                       todoValidado
                         ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300'
-                        : 'bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-300'
+                        : 'bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300'
                     }`}
                   >
-                    {skusValidados} de {totalSkus} SKUs Validados ({porcentajeProgreso}%)
+                    {todoValidado ? <CheckCircle2 className="w-3.5 h-3.5" /> : null}
+                    {skusValidados} de {totalSkus} SKUs listos
                   </span>
                 </div>
-                <p className="text-caption text-gray-500 dark:text-gray-400">
-                  {totalOfsCount} Órdenes de Flete (OFs) representadas en {totalSkus} SKUs únicos agrupados
+
+                <p className="text-caption text-gray-600 dark:text-gray-400 font-medium">
+                  {todoValidado ? (
+                    <span className="text-emerald-700 dark:text-emerald-300 font-bold">
+                      ¡Las {totalOfsCount} OFs están regularizadas y listas para enviar!
+                    </span>
+                  ) : (
+                    <span>
+                      <strong className="text-purple-700 dark:text-purple-300 font-bold">{ofsValidadas} OFs</strong> regularizadas ·{' '}
+                      <strong className="text-amber-700 dark:text-amber-400 font-bold">{ofsPendientes} OFs</strong> pendientes de acción
+                    </span>
+                  )}
                 </p>
               </div>
 
-              {/* Selector de Modo de Vista */}
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <div className="bg-gray-100 dark:bg-slate-900/60 p-1 rounded-xl flex items-center gap-1 border border-gray-200 dark:border-white/10 text-micro font-bold">
-                  <button
-                    type="button"
-                    onClick={() => setViewMode('skus')}
-                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                      viewMode === 'skus'
-                        ? 'bg-white dark:bg-slate-800 text-purple-700 dark:text-purple-300 shadow-xs'
-                        : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-200'
-                    }`}
-                  >
-                    🗂️ Por SKUs Agrupados ({totalSkus})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setViewMode('ofs')}
-                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                      viewMode === 'ofs'
-                        ? 'bg-white dark:bg-slate-800 text-purple-700 dark:text-purple-300 shadow-xs'
-                        : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-200'
-                    }`}
-                  >
-                    📄 Por OFs Individuales ({totalOfsCount})
-                  </button>
-                </div>
+              <div className="flex items-center gap-1.5 self-start sm:self-auto shrink-0">
+                <span className={`text-body font-extrabold ${todoValidado ? 'text-emerald-600 dark:text-emerald-400' : 'text-purple-700 dark:text-purple-300'}`}>
+                  {porcentajeOfs}%
+                </span>
+                <span className="text-caption font-medium text-gray-500 dark:text-gray-400">
+                  completado
+                </span>
               </div>
             </div>
 
             {/* Barra de Progreso Visual */}
-            <div className="w-full h-2.5 bg-gray-100 dark:bg-white/10 rounded-full overflow-hidden">
+            <div className="w-full h-3 bg-gray-100 dark:bg-slate-900/80 rounded-full overflow-hidden p-0.5 border border-gray-200/60 dark:border-white/10">
               <div
                 className={`h-full transition-all duration-500 rounded-full ${
-                  todoValidado ? 'bg-emerald-500' : 'bg-gradient-to-r from-purple-600 to-indigo-600'
+                  todoValidado ? 'bg-emerald-500 shadow-xs' : 'bg-gradient-to-r from-purple-600 to-indigo-600'
                 }`}
-                style={{ width: `${porcentajeProgreso}%` }}
+                style={{ width: `${porcentajeOfs}%` }}
               />
             </div>
           </div>
@@ -834,9 +865,8 @@ export default function EditarProformaPage() {
             </div>
           </div>
 
-          {/* TABLA DE SKUs (VISTA PREDETERMINADA AGRUPADA) */}
-          {viewMode === 'skus' ? (
-            <div className="overflow-x-auto">
+          {/* TABLA DE SKUs */}
+          <div className="overflow-x-auto">
               <table className="w-full text-left text-body">
                 <thead className="bg-purple-50/40 dark:bg-white/5 border-b border-purple-900/10 dark:border-white/10 text-gray-600 dark:text-gray-400 font-semibold uppercase tracking-wider text-micro">
                   <tr>
@@ -896,8 +926,8 @@ export default function EditarProformaPage() {
 
                         {/* COLUMNA UNIFICADA: Sugerencia Medidas */}
                         <td className="py-4 px-5">
-                          <div className="space-y-1">
-                            {/* Origen del dato en una sola línea */}
+                          <div className="space-y-1.5">
+                            {/* Origen del dato */}
                             {isHist && (
                               <div className="flex items-center gap-1.5 whitespace-nowrap">
                                 <span className="inline-flex items-center gap-1 text-micro font-bold text-emerald-700 dark:text-emerald-400">
@@ -907,16 +937,36 @@ export default function EditarProformaPage() {
                             )}
 
                             {isIa && (
-                              <div className="flex items-center gap-1.5 whitespace-nowrap">
-                                <span className="inline-flex items-center gap-1 text-micro font-bold text-purple-700 dark:text-purple-300">
-                                  <Bot className="w-3.5 h-3.5" /> Agente IA Web
-                                </span>
+                              <div>
+                                {item.modificadoPorAnalista ? (
+                                  <div className="space-y-1">
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/15 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-500/30">
+                                      <UserCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> Modificado por Analista
+                                    </span>
+                                    <span className="text-[10px] text-gray-500 dark:text-gray-400 block font-mono">
+                                      Sugerencia IA original: {item.datosIa?.pesoKg}kg ({item.datosIa?.dimensionesCm.largo}x{item.datosIa?.dimensionesCm.ancho}x{item.datosIa?.dimensionesCm.alto} cm)
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-1.5 whitespace-nowrap">
+                                    <span className="inline-flex items-center gap-1 text-micro font-bold text-purple-700 dark:text-purple-300">
+                                      <Bot className="w-3.5 h-3.5" /> Agente IA Web
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             )}
 
                             {isManual && (
                               <div className="flex items-center gap-1.5 whitespace-nowrap">
-                                {item.evidenciaManual ? (
+                                {item.evidenciaManual?.sinEvidencia ? (
+                                  <span
+                                    className="inline-flex items-center gap-1 text-[11px] text-amber-800 dark:text-amber-300 font-bold bg-amber-50 dark:bg-amber-500/15 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-500/30"
+                                    title={item.evidenciaManual.motivoSinEvidencia}
+                                  >
+                                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> Sin evidencia web · Objeción cliente
+                                  </span>
+                                ) : item.evidenciaManual ? (
                                   <span className="inline-flex items-center gap-1 text-micro font-bold text-emerald-700 dark:text-emerald-400">
                                     <CheckCircle2 className="w-3.5 h-3.5" /> Evidencia Adjunta
                                   </span>
@@ -937,8 +987,8 @@ export default function EditarProformaPage() {
                                 {item.dimensionesFinalesCm.largo}x{item.dimensionesFinalesCm.ancho}x{item.dimensionesFinalesCm.alto} cm
                               </span>
                               {item.modificadoPorAnalista && (
-                                <span className="text-[10px] font-bold text-purple-600 block">
-                                  ✏️ Editado manual
+                                <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 block">
+                                  ✏️ Ajuste manual aplicado
                                 </span>
                               )}
                             </div>
@@ -951,12 +1001,12 @@ export default function EditarProformaPage() {
                                 rel="noreferrer"
                                 className="inline-flex items-center gap-1 text-[11px] text-purple-600 dark:text-purple-400 hover:underline font-semibold"
                               >
-                                <span>Ver fuente web</span>
+                                <span>Ver fuente web IA</span>
                                 <ExternalLink className="w-2.5 h-2.5" />
                               </a>
                             )}
 
-                            {item.evidenciaManual?.urlProveedor && (
+                            {!item.evidenciaManual?.sinEvidencia && item.evidenciaManual?.urlProveedor && (
                               <a
                                 href={item.evidenciaManual.urlProveedor}
                                 target="_blank"
@@ -971,18 +1021,36 @@ export default function EditarProformaPage() {
                         </td>
 
                         {/* Estado */}
-                        <td className="py-4 px-5">
+                        <td className="py-4 px-5 whitespace-nowrap">
                           {isVal ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-micro font-extrabold bg-emerald-50 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-300">
-                              <CheckCircle2 className="w-3 h-3" /> Validado
-                            </span>
+                            item.tier === 'IA_Web' && item.modificadoPorAnalista ? (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-micro font-extrabold bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-300 whitespace-nowrap">
+                                <UserCheck className="w-3.5 h-3.5" /> Ajuste Manual
+                              </span>
+                            ) : item.tier === 'IA_Web' ? (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-micro font-extrabold bg-purple-50 dark:bg-purple-500/15 text-purple-800 dark:text-purple-300 border border-purple-300 whitespace-nowrap">
+                                <Bot className="w-3.5 h-3.5" /> Validado IA
+                              </span>
+                            ) : item.tier === 'Historico' ? (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-micro font-extrabold bg-emerald-50 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-300 whitespace-nowrap">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Maestro Starken
+                              </span>
+                            ) : item.evidenciaManual?.sinEvidencia ? (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-micro font-extrabold bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-300 whitespace-nowrap">
+                                <UserCheck className="w-3.5 h-3.5" /> Ajuste Manual
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-micro font-extrabold bg-emerald-50 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-300 whitespace-nowrap">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Evidencia Validada
+                              </span>
+                            )
                           ) : item.estadoValidacion === 'Pendiente_IA' ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-micro font-extrabold bg-purple-50 dark:bg-purple-500/15 text-purple-800 dark:text-purple-300 border border-purple-300 animate-pulse">
-                              <Bot className="w-3 h-3" /> Requiere V°B° IA
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-micro font-extrabold bg-purple-50 dark:bg-purple-500/15 text-purple-800 dark:text-purple-300 border border-purple-300 animate-pulse whitespace-nowrap">
+                              <Bot className="w-3.5 h-3.5" /> Requiere V°B° IA
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-micro font-extrabold bg-rose-50 dark:bg-rose-500/15 text-rose-800 dark:text-rose-300 border border-rose-300 animate-pulse">
-                              <AlertTriangle className="w-3 h-3" /> Búsqueda Manual
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-micro font-extrabold bg-rose-50 dark:bg-rose-500/15 text-rose-800 dark:text-rose-300 border border-rose-300 animate-pulse whitespace-nowrap">
+                              <AlertTriangle className="w-3.5 h-3.5" /> Búsqueda Manual
                             </span>
                           )}
                         </td>
@@ -992,25 +1060,41 @@ export default function EditarProformaPage() {
                           <div className="flex items-center justify-end gap-1.5">
                             {/* Caso IA: Aceptar o Modificar */}
                             {item.tier === 'IA_Web' && (
-                              <>
-                                <button
-                                  type="button"
-                                  onClick={() => handleAprobarSugerenciaIa(item)}
-                                  title="Aceptar sugerencia de IA para este SKU"
-                                  className="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-micro font-bold transition-all shadow-2xs flex items-center gap-1 cursor-pointer"
-                                >
-                                  <Check className="w-3.5 h-3.5" />
-                                  <span>Aceptar IA</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenEditIaModal(item)}
-                                  title="Modificar manualmente las medidas de la IA"
-                                  className="p-1.5 bg-white dark:bg-slate-700 border border-purple-200 dark:border-white/10 hover:bg-purple-50 text-purple-700 dark:text-purple-300 rounded-lg text-micro font-bold transition-all cursor-pointer"
-                                >
-                                  <Pencil className="w-3.5 h-3.5" />
-                                </button>
-                              </>
+                              isVal ? (
+                                <div className="flex items-center gap-1.5 justify-end">
+                                  <span className="text-micro text-gray-400 font-medium italic">
+                                    {item.modificadoPorAnalista ? 'Ajuste manual' : 'Validado IA'}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenEditIaModal(item)}
+                                    title="Modificar / Re-editar medidas manualmente"
+                                    className="p-1.5 bg-white dark:bg-slate-700 border border-amber-200 dark:border-white/10 hover:bg-amber-50 text-amber-700 dark:text-amber-300 rounded-lg text-micro font-bold transition-all cursor-pointer"
+                                  >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAprobarSugerenciaIa(item)}
+                                    title="Aceptar sugerencia de IA para este SKU"
+                                    className="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-micro font-bold transition-all shadow-2xs flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <Check className="w-3.5 h-3.5" />
+                                    <span>Aceptar IA</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenEditIaModal(item)}
+                                    title="Modificar manualmente las medidas de la IA"
+                                    className="p-1.5 bg-white dark:bg-slate-700 border border-purple-200 dark:border-white/10 hover:bg-purple-50 text-purple-700 dark:text-purple-300 rounded-lg text-micro font-bold transition-all cursor-pointer"
+                                  >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </button>
+                                </>
+                              )
                             )}
 
                             {/* Caso Manual: Adjuntar Evidencia */}
@@ -1018,10 +1102,9 @@ export default function EditarProformaPage() {
                               <button
                                 type="button"
                                 onClick={() => handleOpenManualEvidenceModal(item)}
-                                className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-micro font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                                className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-micro font-bold transition-all shadow-2xs whitespace-nowrap cursor-pointer"
                               >
-                                <Globe className="w-3.5 h-3.5" />
-                                <span>{item.evidenciaManual ? 'Editar Evidencia' : '+ Adjuntar Evidencia'}</span>
+                                {item.evidenciaManual ? 'Editar Evidencia' : '+ Adjuntar Evidencia'}
                               </button>
                             )}
 
@@ -1039,49 +1122,6 @@ export default function EditarProformaPage() {
                 </tbody>
               </table>
             </div>
-          ) : (
-            /* VISTA DETALLADA POR OF (Para auditar las 500 órdenes) */
-            <div className="p-4 space-y-3">
-              <div className="p-3 bg-purple-50/50 dark:bg-white/5 rounded-xl border border-purple-100 dark:border-white/5 flex items-center justify-between text-caption">
-                <span className="text-gray-600 dark:text-gray-300 font-medium">
-                  Mostrando desglose individual de las <strong>{totalOfsCount} Órdenes de Flete</strong> asociadas:
-                </span>
-                <span className="text-micro text-purple-700 dark:text-purple-300 font-mono font-bold">
-                  Lote consolidado
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 max-h-96 overflow-y-auto p-1">
-                {skusList.flatMap((skuItem) =>
-                  Array.from({ length: Math.min(skuItem.totalOfs, 10) }).map((_, idx) => (
-                    <div
-                      key={`${skuItem.id}-${idx}`}
-                      className="p-2.5 bg-white dark:bg-slate-900/60 rounded-lg border border-gray-200 dark:border-white/10 text-caption space-y-1 shadow-2xs"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono font-bold text-gray-900 dark:text-gray-100 text-micro">
-                          OF-{9800 + idx * 7 + Number(skuItem.id.split('-')[1]) * 13}
-                        </span>
-                        <span
-                          className={`w-2 h-2 rounded-full ${
-                            skuItem.estadoValidacion === 'Validado_Auto' || skuItem.estadoValidacion === 'Validado_Humano'
-                              ? 'bg-emerald-500'
-                              : 'bg-rose-500 animate-pulse'
-                          }`}
-                        />
-                      </div>
-                      <p className="font-mono text-micro text-purple-700 dark:text-purple-400 font-bold truncate">
-                        {skuItem.sku}
-                      </p>
-                      <p className="text-[10px] text-gray-500">
-                        {skuItem.pesoFinalKg} kg · {skuItem.dimensionesFinalesCm.largo}x{skuItem.dimensionesFinalesCm.ancho}x{skuItem.dimensionesFinalesCm.alto} cm
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Resumen Financiero y Botones Finales */}
@@ -1140,7 +1180,7 @@ export default function EditarProformaPage() {
       {/* ─── MODAL 1: REVISAR / MODIFICAR SUGERENCIA IA (TIER 2) ─── */}
       {editingIaItem && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 border border-purple-900/10 dark:border-white/10 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-6 space-y-5 text-left">
+          <div className="bg-white dark:bg-slate-800 border border-purple-900/10 dark:border-white/10 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-6 space-y-4 text-left">
             <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-white/10">
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 flex items-center justify-center">
@@ -1151,7 +1191,7 @@ export default function EditarProformaPage() {
                     {editingIaItem.sku}
                   </span>
                   <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 leading-tight">
-                    Revisión de Sugerencia del Agente IA
+                    Ajustar Medidas del SKU (Sobrescribir IA)
                   </h3>
                 </div>
               </div>
@@ -1165,12 +1205,20 @@ export default function EditarProformaPage() {
               </button>
             </div>
 
-            <div className="p-3.5 bg-purple-50/60 dark:bg-purple-950/20 rounded-xl border border-purple-200 dark:border-purple-800/30 text-caption space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-purple-950 dark:text-purple-200">
-                  Fuente Web Encontrada por IA:
-                </span>
+            {/* Aviso de Auditoría y Trazabilidad */}
+            <div className="p-3 bg-amber-50/80 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800/40 text-caption flex items-start gap-2.5 text-amber-900 dark:text-amber-200">
+              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="text-micro leading-relaxed">
+                <span className="font-bold block text-amber-950 dark:text-amber-100">Registro de Cambio Manual:</span>
+                Al guardar modificaciones aquí, este SKU quedará registrado con trazabilidad como <strong>Modificado manualmente por Analista</strong> y no como validado por IA.
               </div>
+            </div>
+
+            {/* Ficha técnica web encontrada por IA */}
+            <div className="p-3 bg-purple-50/60 dark:bg-purple-950/20 rounded-xl border border-purple-200 dark:border-purple-800/30 text-caption space-y-1">
+              <span className="font-bold text-purple-950 dark:text-purple-200 block text-micro">
+                Fuente Web Encontrada por IA:
+              </span>
               <a
                 href={editingIaItem.datosIa?.fuenteUrl}
                 target="_blank"
@@ -1179,14 +1227,17 @@ export default function EditarProformaPage() {
               >
                 {editingIaItem.datosIa?.fuenteUrl} ↗
               </a>
-              <p className="text-micro text-gray-500 dark:text-gray-400 pt-1">
-                Afecta a <strong>{editingIaItem.totalOfs} OFs</strong> vinculadas a este SKU.
-              </p>
+              <div className="flex items-center justify-between text-micro text-gray-500 dark:text-gray-400 pt-1 border-t border-purple-100 dark:border-purple-900/40 mt-1">
+                <span>Sugerencia IA original:</span>
+                <span className="font-mono font-bold text-gray-700 dark:text-gray-300">
+                  {editingIaItem.datosIa?.pesoKg} kg · {editingIaItem.datosIa?.dimensionesCm.largo}x{editingIaItem.datosIa?.dimensionesCm.ancho}x{editingIaItem.datosIa?.dimensionesCm.alto} cm
+                </span>
+              </div>
             </div>
 
             <div className="space-y-3">
               <label className="text-caption font-bold text-gray-700 dark:text-gray-300 block">
-                Verificar o Ajustar Medidas Definitivas
+                Nuevas Medidas Definitivas (Ajuste Manual)
               </label>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -1247,17 +1298,18 @@ export default function EditarProformaPage() {
                 className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-caption rounded-xl transition-all shadow-sm cursor-pointer inline-flex items-center gap-1.5"
               >
                 <Check className="w-4 h-4" />
-                <span>Guardar y Aplicar a {editingIaItem.totalOfs} OFs</span>
+                <span>Guardar</span>
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ─── MODAL 2: ADJUNTAR EVIDENCIA MANUAL WEB (TIER 3) ─── */}
+      {/* ─── MODAL 2: ADJUNTAR EVIDENCIA MANUAL O ACEPTAR OBJECIÓN (TIER 3) ─── */}
       {manualEvidenceItem && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 border border-purple-900/10 dark:border-white/10 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-6 space-y-5 text-left max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-slate-800 border border-purple-900/10 dark:border-white/10 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-6 space-y-4 text-left max-h-[90vh] overflow-y-auto">
+            {/* Header del Modal */}
             <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-white/10">
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center justify-center">
@@ -1268,7 +1320,7 @@ export default function EditarProformaPage() {
                     {manualEvidenceItem.sku}
                   </span>
                   <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 leading-tight">
-                    Carga de Evidencia Web del Proveedor
+                    Gestión de SKU Manual ({manualEvidenceItem.totalOfs} OFs)
                   </h3>
                 </div>
               </div>
@@ -1282,96 +1334,159 @@ export default function EditarProformaPage() {
               </button>
             </div>
 
+            {/* Subtítulo dinámico */}
             <p className="text-caption text-gray-600 dark:text-gray-300">
-              La IA no encontró coincidencia automática. Debes validar manualmente el producto en la web del proveedor e ingresar los respaldos requeridos para <strong>{manualEvidenceItem.totalOfs} OFs</strong>.
+              {sinEvidenciaEncontrada
+                ? 'No se encontró ficha técnica pública. Se aplicarán las medidas según la objeción/declaración del cliente.'
+                : 'Ingresa el link y pantallazo de la ficha técnica oficial encontrada para este producto.'}
             </p>
 
-            {/* Campo 1: URL de la página del proveedor */}
-            <div className="space-y-1.5">
-              <label className="text-caption font-bold text-gray-700 dark:text-gray-300 block">
-                Link / URL de la ficha técnica del proveedor <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="url"
-                value={manualUrl}
-                onChange={(e) => setManualUrl(e.target.value)}
-                placeholder="https://tienda.cl/producto/sku-ejemplo"
-                className="w-full p-2.5 bg-white dark:bg-slate-900 border border-gray-300 dark:border-white/10 rounded-xl font-mono text-caption text-gray-900 dark:text-gray-100 outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20 transition-all"
-              />
-            </div>
-
-            {/* Campo 2: Screenshot / Captura de Pantalla */}
-            <div className="space-y-2">
-              <label className="text-caption font-bold text-gray-700 dark:text-gray-300 block">
-                Captura / Pantallazo de Respaldo <span className="text-rose-500">*</span>
-              </label>
-
-              {manualFilePreview || manualFile ? (
-                <div className="p-3 bg-purple-50/50 dark:bg-purple-900/10 border border-purple-200 dark:border-white/10 rounded-xl flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <FileImage className="w-5 h-5 text-purple-600 shrink-0" />
-                    <span className="text-caption font-bold text-gray-800 dark:text-gray-200 truncate">
-                      {manualFile ? manualFile.name : 'ficha_tecnica_producto.png'}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setManualFile(null);
-                      setManualFilePreview(null);
-                    }}
-                    className="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : (
-                <div className="border border-dashed border-gray-300 dark:border-white/15 rounded-xl p-4 bg-gray-50/50 dark:bg-white/5 text-center">
+            {/* Campos de Evidencia Web (URL y Captura) - Ocultos si no se encontró evidencia */}
+            {!sinEvidenciaEncontrada && (
+              <div className="space-y-3 animate-in fade-in duration-200">
+                {/* Campo 1: URL de la página del proveedor */}
+                <div className="space-y-1">
+                  <label className="text-caption font-bold text-gray-700 dark:text-gray-300 block">
+                    Link / URL de la ficha técnica del proveedor <span className="text-rose-500">*</span>
+                  </label>
                   <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        setManualFile(e.target.files[0]);
-                        setManualFilePreview(URL.createObjectURL(e.target.files[0]));
-                      }
-                    }}
-                    className="hidden"
-                    id="manual-evidence-file"
+                    type="url"
+                    value={manualUrl}
+                    onChange={(e) => setManualUrl(e.target.value)}
+                    placeholder="https://tienda.cl/producto/sku-ejemplo"
+                    className="w-full p-2.5 bg-white dark:bg-slate-900 border border-gray-300 dark:border-white/10 rounded-xl font-mono text-caption text-gray-900 dark:text-gray-100 outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-500/20 transition-all"
                   />
-                  <div className="flex flex-col items-center gap-2">
-                    <Upload className="w-5 h-5 text-purple-600" />
-                    <p className="text-caption font-bold text-gray-800 dark:text-gray-200">
-                      Arrastra tu pantallazo de la ficha web
-                    </p>
-                    <div className="flex items-center gap-2 pt-1">
-                      <label
-                        htmlFor="manual-evidence-file"
-                        className="px-3 py-1 bg-purple-600 text-white rounded-lg text-micro font-bold cursor-pointer"
-                      >
-                        Examinar
-                      </label>
+                </div>
+
+                {/* Campo 2: Screenshot / Captura de Pantalla */}
+                <div className="space-y-1.5">
+                  <label className="text-caption font-bold text-gray-700 dark:text-gray-300 block">
+                    Captura / Pantallazo de Respaldo <span className="text-rose-500">*</span>
+                  </label>
+
+                  {manualFilePreview || manualFile ? (
+                    <div className="p-2.5 bg-purple-50/50 dark:bg-purple-900/10 border border-purple-200 dark:border-white/10 rounded-xl flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileImage className="w-4 h-4 text-purple-600 shrink-0" />
+                        <span className="text-caption font-bold text-gray-800 dark:text-gray-200 truncate">
+                          {manualFile ? manualFile.name : 'ficha_tecnica_producto.png'}
+                        </span>
+                      </div>
                       <button
                         type="button"
                         onClick={() => {
-                          setManualFilePreview('/demo_email_aprobado.png');
-                          setManualFile(new File(['demo'], 'captura_ficha_tecnica.png', { type: 'image/png' }));
+                          setManualFile(null);
+                          setManualFilePreview(null);
                         }}
-                        className="px-3 py-1 bg-white dark:bg-slate-700 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-200 rounded-lg text-micro font-bold cursor-pointer"
+                        className="p-1 text-gray-400 hover:text-rose-600 rounded-lg cursor-pointer"
                       >
-                        Usar Imagen Demo
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="border border-dashed border-gray-300 dark:border-white/15 rounded-xl p-3 bg-gray-50/50 dark:bg-white/5 text-center">
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            setManualFile(e.target.files[0]);
+                            setManualFilePreview(URL.createObjectURL(e.target.files[0]));
+                          }
+                        }}
+                        className="hidden"
+                        id="manual-evidence-file"
+                      />
+                      <div className="flex flex-col items-center gap-1.5">
+                        <Upload className="w-4 h-4 text-purple-600" />
+                        <p className="text-caption font-bold text-gray-800 dark:text-gray-200">
+                          Arrastra tu pantallazo de la ficha web
+                        </p>
+                        <div className="flex items-center gap-2 pt-0.5">
+                          <label
+                            htmlFor="manual-evidence-file"
+                            className="px-2.5 py-1 bg-purple-600 text-white rounded-lg text-micro font-bold cursor-pointer"
+                          >
+                            Examinar
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setManualFilePreview('/demo_email_aprobado.png');
+                              setManualFile(new File(['demo'], 'captura_ficha_tecnica.png', { type: 'image/png' }));
+                            }}
+                            className="px-2.5 py-1 bg-white dark:bg-slate-700 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-200 rounded-lg text-micro font-bold cursor-pointer"
+                          >
+                            Usar Demo
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* SECCIÓN / CHECKBOX: SIN EVIDENCIA ENCONTRADA */}
+            <div
+              className={`p-3 rounded-xl border transition-all ${
+                sinEvidenciaEncontrada
+                  ? 'bg-amber-50/80 dark:bg-amber-500/10 border-amber-300 dark:border-amber-500/30'
+                  : 'bg-gray-50/60 dark:bg-white/5 border-gray-200 dark:border-white/10 hover:border-gray-300'
+              }`}
+            >
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={sinEvidenciaEncontrada}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setSinEvidenciaEncontrada(checked);
+                    if (checked) {
+                      handleApplyDeclaradasCliente();
+                    }
+                  }}
+                  className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer accent-purple-600"
+                />
+                <span className="text-caption font-bold text-gray-900 dark:text-gray-100">
+                  No se encontró evidencia web
+                </span>
+              </label>
+
+              {/* Campo de justificación al marcar el checkbox */}
+              {sinEvidenciaEncontrada && (
+                <div className="mt-2.5 pt-2.5 border-t border-amber-200/70 dark:border-white/10 space-y-1 animate-in fade-in duration-150">
+                  <label className="text-micro font-bold text-amber-950 dark:text-amber-200 block">
+                    Observación / Justificación del Analista:
+                  </label>
+                  <input
+                    type="text"
+                    value={motivoSinEvidencia}
+                    onChange={(e) => setMotivoSinEvidencia(e.target.value)}
+                    placeholder="Ej. No se encontró ficha técnica pública, se acepta declaración cliente"
+                    className="w-full p-2 bg-white dark:bg-slate-900 border border-amber-300 dark:border-white/10 rounded-lg text-caption text-gray-900 dark:text-gray-100 outline-none focus:border-amber-600"
+                  />
                 </div>
               )}
             </div>
 
-            {/* Campo 3: Medidas Confirmadas */}
-            <div className="space-y-2">
-              <label className="text-caption font-bold text-gray-700 dark:text-gray-300 block">
-                Medidas Confirmadas de la Ficha Técnica
-              </label>
+            {/* Campo 3: Medidas a Aplicar */}
+            <div className="space-y-2 pt-1 border-t border-gray-100 dark:border-white/10">
+              <div className="flex items-center justify-between">
+                <label className="text-caption font-bold text-gray-700 dark:text-gray-300 block">
+                  {sinEvidenciaEncontrada ? 'Medidas a Aplicar (Objeción del Cliente):' : 'Medidas Confirmadas de la Ficha Técnica:'}
+                </label>
+                <button
+                  type="button"
+                  onClick={handleApplyDeclaradasCliente}
+                  className="text-micro text-purple-700 dark:text-purple-300 hover:underline font-bold inline-flex items-center gap-1 cursor-pointer"
+                  title="Cargar las medidas declaradas/objetadas originalmente por el cliente"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Cargar datos declarados por cliente
+                </button>
+              </div>
+
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 <div>
                   <label className="text-micro font-medium text-gray-500 block mb-1">Peso (kg)</label>
@@ -1380,7 +1495,7 @@ export default function EditarProformaPage() {
                     step="0.1"
                     value={manualFormPeso}
                     onChange={(e) => setManualFormPeso(Number(e.target.value))}
-                    className="w-full p-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-white/10 rounded-lg font-mono font-bold text-body text-gray-900 dark:text-gray-100 outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20 transition-all"
+                    className="w-full p-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-white/10 rounded-lg font-mono font-bold text-body text-gray-900 dark:text-gray-100 outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-500/20 transition-all"
                   />
                 </div>
                 <div>
@@ -1389,7 +1504,7 @@ export default function EditarProformaPage() {
                     type="number"
                     value={manualFormLargo}
                     onChange={(e) => setManualFormLargo(Number(e.target.value))}
-                    className="w-full p-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-white/10 rounded-lg font-mono font-bold text-body text-gray-900 dark:text-gray-100 outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20 transition-all"
+                    className="w-full p-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-white/10 rounded-lg font-mono font-bold text-body text-gray-900 dark:text-gray-100 outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-500/20 transition-all"
                   />
                 </div>
                 <div>
@@ -1398,7 +1513,7 @@ export default function EditarProformaPage() {
                     type="number"
                     value={manualFormAncho}
                     onChange={(e) => setManualFormAncho(Number(e.target.value))}
-                    className="w-full p-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-white/10 rounded-lg font-mono font-bold text-body text-gray-900 dark:text-gray-100 outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20 transition-all"
+                    className="w-full p-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-white/10 rounded-lg font-mono font-bold text-body text-gray-900 dark:text-gray-100 outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-500/20 transition-all"
                   />
                 </div>
                 <div>
@@ -1407,12 +1522,13 @@ export default function EditarProformaPage() {
                     type="number"
                     value={manualFormAlto}
                     onChange={(e) => setManualFormAlto(Number(e.target.value))}
-                    className="w-full p-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-white/10 rounded-lg font-mono font-bold text-body text-gray-900 dark:text-gray-100 outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20 transition-all"
+                    className="w-full p-2 bg-white dark:bg-slate-900 border border-gray-300 dark:border-white/10 rounded-lg font-mono font-bold text-body text-gray-900 dark:text-gray-100 outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-500/20 transition-all"
                   />
                 </div>
               </div>
             </div>
 
+            {/* Footer con Botones */}
             <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100 dark:border-white/10">
               <button
                 type="button"
@@ -1424,10 +1540,10 @@ export default function EditarProformaPage() {
               <button
                 type="button"
                 onClick={handleSaveManualEvidence}
-                className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-caption rounded-xl transition-all shadow-sm cursor-pointer inline-flex items-center gap-1.5"
+                className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-caption font-extrabold shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
               >
-                <Save className="w-4 h-4" />
-                <span>Guardar Evidencia ({manualEvidenceItem.totalOfs} OFs)</span>
+                <Check className="w-4 h-4" />
+                <span>Guardar</span>
               </button>
             </div>
           </div>

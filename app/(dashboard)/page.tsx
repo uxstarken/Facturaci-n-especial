@@ -18,12 +18,15 @@ import {
   FileImage,
   Download,
   Layers,
+  ShieldCheck,
+  Check,
+  Tag,
 } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { useTheme } from '@/context/theme-context';
 import { useToast } from '@/context/toast-context';
 import { MOCK_PROFORMAS } from '@/lib/mock-data';
-import { Proforma } from '@/lib/types';
+import { Proforma, VersionProforma } from '@/lib/types';
 import { formatCurrency } from '@/lib/utils';
 import { RespuestaClienteModal } from '@/components/proformas/RespuestaClienteModal';
 
@@ -51,6 +54,84 @@ export default function DashboardHome() {
 
   const hasShownToastRef = useRef(false);
 
+  // HANDLER: SIMULAR AUTORIZACIÓN DE SUPERVISOR / JEFATURA
+  const handleAutorizarSupervisor = (proformaId: string) => {
+    setProformas((prev) =>
+      prev.map((p) => {
+        if (p.id === proformaId) {
+          const prevHist = p.historialVersiones || [];
+          const updatedHist = prevHist.map((h, i) =>
+            i === prevHist.length - 1
+              ? {
+                  ...h,
+                  estadoSupervision: 'Autorizada' as const,
+                  aprobadoPorSupervisor: 'Carlos Muñoz (Jefatura)',
+                  fechaSupervision: new Date().toLocaleDateString('es-CL'),
+                }
+              : h
+          );
+          return {
+            ...p,
+            estadoSupervision: 'Autorizada',
+            estado: 'Pendiente', // Pasa a estado de enviada formalmente al cliente
+            historialVersiones: updatedHist,
+          };
+        }
+        return p;
+      })
+    );
+    showToast(
+      `Versión de ${proformaId} aprobada por Jefatura (Carlos Muñoz). Lista para validación comercial con el cliente.`,
+      'success',
+      5500,
+      'V°B° Jefatura Concedido'
+    );
+  };
+
+  // HANDLER: SIMULAR RESOLUCIÓN DE PRICING
+  const handleResolverPricing = (proformaId: string) => {
+    setProformas((prev) =>
+      prev.map((p) => {
+        if (p.id === proformaId) {
+          return {
+            ...p,
+            estado: 'Tarifas Corregidas por Pricing',
+            estadoSupervision: 'Pricing_Resuelto',
+          };
+        }
+        return p;
+      })
+    );
+    showToast(
+      `Tarifas corregidas por Pricing para ${proformaId}. El analista ya puede editar la proforma con los nuevos precios.`,
+      'info',
+      6500,
+      'Tarifas Corregidas por Pricing'
+    );
+  };
+
+  // HANDLER: SIMULAR DEVOLUCIÓN DE SUPERVISOR A ANALISTA
+  const handleDevolverSupervisor = (proformaId: string) => {
+    setProformas((prev) =>
+      prev.map((p) => {
+        if (p.id === proformaId) {
+          return {
+            ...p,
+            estadoSupervision: 'Devuelta_Analista',
+            estado: 'Pendiente de validación',
+          };
+        }
+        return p;
+      })
+    );
+    showToast(
+      `Proforma ${proformaId} devuelta al analista con observaciones para nuevo ajuste de medidas.`,
+      'warning',
+      5500,
+      'Devuelta por Jefatura'
+    );
+  };
+
   useEffect(() => {
     const highlightParam = searchParams.get('highlight');
     const toastParam = searchParams.get('toast');
@@ -66,21 +147,40 @@ export default function DashboardHome() {
           prev.map((p) => {
             if (p.id === highlightParam) {
               const prevHist = p.historialVersiones || [];
-              const yaTieneV2 = prevHist.some((h) => h.version === 'v2');
-              const nuevoHist = yaTieneV2
+              const nextVerNum = prevHist.length + 1;
+              const nextVer = (nextVerNum === 2 ? 'v2' : nextVerNum >= 3 ? 'v3' : 'v2') as VersionProforma;
+
+              const yaTieneVer = prevHist.some((h) => h.version === nextVer);
+              // Si se avanza a una versión superior (ej: V2 -> V3), todas las versiones previas necesariamente fueron rechazadas
+              const sanitizedPrevHist = prevHist.map((h, i) => ({
+                ...h,
+                estado: 'Rechazada' as const,
+                fechaRechazo: h.fechaRechazo || new Date().toLocaleDateString('es-CL'),
+                motivo:
+                  h.motivo ||
+                  (h.version === 'v1'
+                    ? 'Diferencia en recubitaje / medidas de SKUs'
+                    : 'Rechazo comercial por cliente / Ajuste de medidas'),
+                respaldoCorreoUrl: h.respaldoCorreoUrl || '/demo_email_rechazado.png',
+              }));
+
+              const nuevoHist = yaTieneVer
                 ? prevHist
                 : [
-                    ...prevHist,
+                    ...sanitizedPrevHist,
                     {
-                      version: 'v2' as const,
+                      version: nextVer,
                       fechaCreacion: new Date().toLocaleDateString('es-CL'),
                       monto: nuevoMonto,
                       estado: 'Pendiente de validación',
+                      estadoSupervision: 'Pendiente_Autorizacion' as const,
                     },
                   ];
 
               return {
                 ...p,
+                versionActual: nextVer,
+                estadoSupervision: 'Pendiente_Autorizacion',
                 estado: 'Pendiente de validación',
                 monto: nuevoMonto,
                 montoFormatted: formatCurrency(nuevoMonto),
@@ -91,16 +191,16 @@ export default function DashboardHome() {
           })
         );
 
-        // Auto desplegar la línea de tiempo para ver la nueva versión V2
+        // Auto desplegar la línea de tiempo para ver la nueva versión V2/V3
         setExpandedProformaId(highlightParam);
 
         if (!hasShownToastRef.current) {
           hasShownToastRef.current = true;
           showToast(
-            `Proforma ${highlightParam} actualizada exitosamente a Versión V2 en estado «Pendiente de validación».`,
+            `Proforma ${highlightParam} actualizada exitosamente. Se generó nueva versión con solicitud de V°B° enviada a Jefatura.`,
             'success',
             6000,
-            'Versión V2 Generada'
+            'Nueva Versión en Supervisión'
           );
         }
       } else if ((toastParam === 'created' || toastParam === 'true') && !hasShownToastRef.current) {
@@ -232,20 +332,25 @@ export default function DashboardHome() {
             </span>
           </div>
           <p className="text-3xl font-extrabold text-rose-600 dark:text-rose-400 leading-none mb-1">
-            {proformas.filter((p) => p.estado === 'Derivada a CAM' || (p.conteoRechazos || 0) >= 2).length}
+            {proformas.filter((p) => p.estado === 'Derivada a CAM' || (p.conteoRechazos || 0) >= 3).length}
           </p>
-          <p className="text-caption text-gray-600 dark:text-gray-400 font-medium">Derivadas al CAM (2 rechazos)</p>
+          <p className="text-caption text-gray-600 dark:text-gray-400 font-medium">Derivadas al CAM (3 rechazos / V3)</p>
         </div>
       </div>
 
       {/* Tabla de Proformas */}
       <div className="bg-white dark:bg-slate-800 border border-purple-900/10 dark:border-white/10 rounded-xl shadow-sm overflow-hidden">
         <div className="p-5 border-b border-purple-900/10 dark:border-white/10 bg-purple-50/30 dark:bg-white/5 flex items-center justify-between gap-4 flex-wrap">
-          <h2 className="text-h2 font-semibold text-gray-900 dark:text-gray-100">
-            Proformas y Estado de Validación de Cliente
-          </h2>
+          <div>
+            <h2 className="text-h2 font-semibold text-gray-900 dark:text-gray-100">
+              Proformas y Control de Versiones (V1, V2, V3)
+            </h2>
+            <p className="text-caption text-gray-500 dark:text-gray-400">
+              Visualización de doble estado: Validación de Jefatura vs. Ciclo Comercial con Cliente
+            </p>
+          </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="relative flex items-center">
               <Search className="w-3.5 h-3.5 absolute left-3 text-gray-400" />
               <input
@@ -253,13 +358,13 @@ export default function DashboardHome() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Buscar por cliente o N°..."
-                className="pl-8 pr-3 py-1.5 bg-white dark:bg-slate-900/50 border border-purple-900/15 dark:border-white/10 rounded-md text-body text-gray-800 dark:text-gray-200 outline-none focus:border-purple-600 shadow-xs"
+                className="pl-8 pr-3 py-1.5 bg-white dark:bg-slate-900/50 border border-purple-900/15 dark:border-white/10 rounded-lg text-body text-gray-800 dark:text-gray-200 outline-none focus:border-purple-600 shadow-xs text-caption"
               />
             </div>
 
             <Link
               href="/proformas/nueva"
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r ${theme.buttonGradient} text-white rounded-md text-body font-semibold shadow-sm transition-all`}
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r ${theme.buttonGradient} text-white rounded-lg text-caption font-semibold shadow-sm transition-all`}
             >
               <Plus className="w-3.5 h-3.5" />
               Nueva Proforma
@@ -273,10 +378,9 @@ export default function DashboardHome() {
               <tr>
                 <th className="py-3.5 px-5">N° Proforma</th>
                 <th className="py-3.5 px-5">Cliente & RUT</th>
-                <th className="py-3.5 px-5">Cuenta Corriente</th>
                 <th className="py-3.5 px-5">Monto Neto</th>
                 <th className="py-3.5 px-5">Fecha Creación</th>
-                <th className="py-3.5 px-5">Estado & Validación</th>
+                <th className="py-3.5 px-5">Versión & Doble Estado (Interno / Comercial)</th>
                 <th className="py-3.5 px-5 text-right">Gestionar</th>
               </tr>
             </thead>
@@ -284,21 +388,22 @@ export default function DashboardHome() {
               {filteredProformas.map((p) => {
                 const isNewlyCreated = highlightedId === p.id;
                 const esEnviadoPricing = p.estado === 'Enviado a Pricing';
-                const esDerivadaCAM = p.estado === 'Derivada a CAM' || (p.conteoRechazos || 0) >= 2;
+                const esPricingResuelto = p.estado === 'Tarifas Corregidas por Pricing' || p.estadoSupervision === 'Pricing_Resuelto';
+                const esDerivadaCAM = p.estado === 'Derivada a CAM' || (p.conteoRechazos || 0) >= 3;
                 const esAprobada = p.estado === 'Aprobada por Cliente' || p.estado === 'Aprobada';
-                const editarBloqueado = esDerivadaCAM || esAprobada;
+                const editarBloqueado = esDerivadaCAM || esAprobada || esEnviadoPricing;
                 const isExpanded = expandedProformaId === p.id;
                 const isStatusMenuOpen = openStatusDropdownId === p.id;
 
-                // Historial de versiones consolidado
                 const versionesLista =
                   p.historialVersiones && p.historialVersiones.length > 0
                     ? p.historialVersiones
                     : [{ version: 'v1' as const, fechaCreacion: p.fecha, monto: p.monto }];
 
-                // Versión actual (última versión registrada)
                 const currentVersion =
-                  versionesLista[versionesLista.length - 1]?.version.toUpperCase() || 'V1';
+                  versionesLista[versionesLista.length - 1]?.version.toUpperCase() ||
+                  p.versionActual?.toUpperCase() ||
+                  'V1';
 
                 const estadoTexto = esDerivadaCAM
                   ? 'Derivada a CAM'
@@ -306,6 +411,8 @@ export default function DashboardHome() {
                   ? 'Aprobada por Cliente'
                   : esEnviadoPricing
                   ? 'Enviado a Pricing'
+                  : esPricingResuelto
+                  ? 'Tarifas Corregidas'
                   : p.estado === 'Rechazada v1' || p.estado === 'Rechazada'
                   ? 'Rechazada v1'
                   : p.estado === 'Rechazada v2'
@@ -331,17 +438,14 @@ export default function DashboardHome() {
                         </div>
                       </td>
 
-                      {/* Cliente & RUT */}
+                      {/* Cliente & RUT (Incluye cuenta corriente en subtexto) */}
                       <td className="py-3.5 px-5 font-medium text-gray-900 dark:text-gray-100">
                         <div>
-                          <span>{p.cliente}</span>
-                          <span className="text-micro font-mono text-gray-500 block">RUT: {p.rut}</span>
+                          <span className="font-bold">{p.cliente}</span>
+                          <span className="text-micro font-mono text-gray-500 dark:text-gray-400 block">
+                            RUT: {p.rut} · {p.cuentaCorrienteId || 'CTA-001'}
+                          </span>
                         </div>
-                      </td>
-
-                      {/* Cuenta Corriente */}
-                      <td className="py-3.5 px-5 font-mono text-caption text-purple-700 dark:text-purple-400 font-medium">
-                        {p.cuentaCorrienteId || 'CTA-001'}
                       </td>
 
                       {/* Monto */}
@@ -350,114 +454,201 @@ export default function DashboardHome() {
                       </td>
 
                       {/* Fecha */}
-                      <td className="py-3.5 px-5 text-gray-600 dark:text-gray-400 font-medium font-mono text-caption">
+                      <td className="py-3.5 px-5 text-gray-600 dark:text-gray-400 font-medium font-mono text-caption whitespace-nowrap">
                         {p.fecha}
                       </td>
 
-                      {/* ─── Columna: Estado & Validación con Flecha Desplegable (Aprobada / Rechazada) ─── */}
+                      {/* ══════════════════════════════════════════════════════════════════════
+                          OPCIÓN 1: 1 COLUMNA COMPUESTA JERÁRQUICA (VERSIÓN + DOBLE ESTADO)
+                         ══════════════════════════════════════════════════════════════════════ */}
                       <td className="py-3.5 px-5">
-                        <div className="relative inline-block text-left">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (editarBloqueado) {
-                                showToast(
-                                  esAprobada
-                                    ? 'Esta proforma ya fue aprobada por el cliente.'
-                                    : 'Esta proforma fue derivada al CAM (Gestión bloqueada).',
-                                  'info'
-                                );
-                                return;
-                              }
-                              setOpenStatusDropdownId(isStatusMenuOpen ? null : p.id);
-                            }}
-                            title={
-                              editarBloqueado
-                                ? esAprobada
-                                  ? 'Aprobada (Bloqueada)'
-                                  : 'Derivada a CAM'
-                                : 'Haga clic para cambiar estado a: Aprobada o Rechazada'
-                            }
-                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-micro font-extrabold transition-all cursor-pointer hover:shadow-xs active:scale-95 ${
-                              esAprobada
-                                ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-300'
-                                : esDerivadaCAM
-                                ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-400'
-                                : esEnviadoPricing
-                                ? 'bg-blue-50 hover:bg-blue-100 dark:bg-blue-500/15 dark:hover:bg-blue-500/25 text-blue-800 dark:text-blue-300 border border-blue-300'
-                                : p.estado === 'Rechazada v1' || p.estado === 'Rechazada'
-                                ? 'bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/15 dark:hover:bg-rose-500/25 text-rose-800 dark:text-rose-300 border border-rose-300'
-                                : 'bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/15 dark:hover:bg-amber-500/25 text-amber-800 dark:text-amber-300 border border-amber-300'
-                            }`}
-                          >
-                            <span>{estadoTexto}</span>
-                            {!editarBloqueado && (
-                              <ChevronDown
-                                className={`w-3.5 h-3.5 opacity-80 transition-transform duration-200 ${
-                                  isStatusMenuOpen ? 'rotate-180' : ''
-                                }`}
-                              />
-                            )}
-                          </button>
+                        <div className="space-y-1.5">
+                          {/* Fila 1: Pastilla de Versión + Estado de Supervisión / Pricing */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-mono text-[11px] font-extrabold ${
+                                currentVersion === 'V1'
+                                  ? 'bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-800'
+                                  : currentVersion === 'V2'
+                                  ? 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-800'
+                                  : 'bg-rose-100 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800'
+                              }`}
+                            >
+                              <Layers className="w-3 h-3" />
+                              {currentVersion}
+                            </span>
 
-                          {/* Menú flotante con las 2 opciones: Aprobada o Rechazada */}
-                          {isStatusMenuOpen && !editarBloqueado && (
-                            <>
-                              {/* Overlay invisible para cerrar al hacer clic afuera */}
-                              <div
-                                className="fixed inset-0 z-20"
-                                onClick={() => setOpenStatusDropdownId(null)}
-                              />
-                              <div className="absolute left-0 top-full mt-1.5 w-60 bg-white dark:bg-slate-800 border border-purple-200 dark:border-white/10 rounded-xl shadow-xl z-30 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-1 text-left">
-                                <div className="px-2.5 py-1 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                                  Cambiar estado a:
-                                </div>
-
-                                {/* Opción 1: Aprobada */}
+                            {/* Estado Supervisión / Pricing / Jefatura */}
+                            {esEnviadoPricing ? (
+                              <div className="inline-flex items-center gap-1.5">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-micro font-extrabold bg-blue-50 dark:bg-blue-500/15 text-blue-800 dark:text-blue-300 border border-blue-300 animate-pulse">
+                                  <Hourglass className="w-3 h-3 text-blue-600" /> Pendiente Pricing
+                                </span>
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    setOpenStatusDropdownId(null);
-                                    setSelectedRespuesta({ proforma: p, tipo: 'Aprobada' });
-                                  }}
-                                  className="w-full px-2.5 py-2 text-left text-caption font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/15 rounded-lg flex items-center gap-2.5 transition-colors cursor-pointer"
+                                  onClick={() => handleResolverPricing(p.id)}
+                                  title="⚡ Simular resolución y corrección de tarifas por el equipo de Pricing"
+                                  className="px-2 py-0.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-[10px] font-bold transition-all cursor-pointer shadow-2xs flex items-center gap-1"
                                 >
-                                  <div className="w-6 h-6 rounded-md bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                                    <CheckCircle2 className="w-4 h-4" />
-                                  </div>
-                                  <div>
-                                    <span className="block leading-tight font-extrabold text-emerald-900 dark:text-emerald-200">
-                                      Aprobada
-                                    </span>
-                                    <span className="text-[10px] font-normal text-gray-500 dark:text-gray-400">
-                                      Adjuntar pantallazo de respaldo
-                                    </span>
-                                  </div>
-                                </button>
-
-                                {/* Opción 2: Rechazada */}
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setOpenStatusDropdownId(null);
-                                    setSelectedRespuesta({ proforma: p, tipo: 'Rechazada' });
-                                  }}
-                                  className="w-full px-2.5 py-2 text-left text-caption font-bold text-rose-800 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/15 rounded-lg flex items-center gap-2.5 transition-colors cursor-pointer"
-                                >
-                                  <div className="w-6 h-6 rounded-md bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
-                                    <XCircle className="w-4 h-4" />
-                                  </div>
-                                  <div>
-                                    <span className="block leading-tight font-extrabold text-rose-900 dark:text-rose-200">
-                                      Rechazada
-                                    </span>
-                                    <span className="text-[10px] font-normal text-gray-500 dark:text-gray-400">
-                                      Especificar motivo y respaldo
-                                    </span>
-                                  </div>
+                                  <Check className="w-2.5 h-2.5" />
+                                  <span>Resuelto</span>
                                 </button>
                               </div>
-                            </>
+                            ) : esPricingResuelto ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-micro font-extrabold bg-sky-50 dark:bg-sky-500/15 text-sky-800 dark:text-sky-300 border border-sky-300">
+                                <Tag className="w-3 h-3 text-sky-600" /> Tarifas Corregidas por Pricing
+                              </span>
+                            ) : p.estadoSupervision === 'Pendiente_Autorizacion' ? (
+                              <div className="inline-flex items-center gap-1.5">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-micro font-extrabold bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-300 animate-pulse">
+                                  <Hourglass className="w-3 h-3 text-amber-600" /> Pendiente V°B° Jefatura
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleAutorizarSupervisor(p.id)}
+                                  title="⚡ Simular aprobación de Jefatura para esta versión"
+                                  className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold transition-all cursor-pointer shadow-2xs flex items-center gap-1"
+                                >
+                                  <Check className="w-2.5 h-2.5" />
+                                  <span>Autorizar</span>
+                                </button>
+                              </div>
+                            ) : p.estadoSupervision === 'Autorizada' && currentVersion !== 'V1' ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-micro font-extrabold bg-emerald-50 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-300">
+                                <ShieldCheck className="w-3 h-3 text-emerald-600" /> Autorizada para Envío
+                              </span>
+                            ) : p.estadoSupervision === 'Devuelta_Analista' && currentVersion !== 'V1' ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-micro font-extrabold bg-rose-50 dark:bg-rose-500/15 text-rose-800 dark:text-rose-300 border border-rose-300">
+                                <XCircle className="w-3 h-3 text-rose-600" /> Devuelta para Corrección
+                              </span>
+                            ) : null}
+                          </div>
+
+                          {/* Fila 2: Sub-estado Comercial con Cliente */}
+                          {esPricingResuelto ? (
+                            <div className="flex items-center gap-1.5 text-caption">
+                              <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                                Cliente:
+                              </span>
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-micro font-bold bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 border border-sky-200">
+                                ✏️ Requiere actualización del analista
+                              </span>
+                            </div>
+                          ) : (
+                            p.estadoSupervision !== 'Pendiente_Autorizacion' && p.estadoSupervision !== 'Devuelta_Analista' && !esEnviadoPricing && (
+                              <div className="flex items-center gap-1.5 text-caption">
+                                <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                                  Cliente:
+                                </span>
+                                <div className="relative inline-block text-left">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (editarBloqueado) {
+                                        showToast(
+                                          esAprobada
+                                            ? 'Esta proforma ya fue aprobada por el cliente.'
+                                            : esDerivadaCAM
+                                            ? 'Esta proforma fue derivada al CAM (Gestión bloqueada).'
+                                            : 'Esta proforma está en revisión de Pricing (Gestión bloqueada).',
+                                          'info'
+                                        );
+                                        return;
+                                      }
+                                      setOpenStatusDropdownId(isStatusMenuOpen ? null : p.id);
+                                    }}
+                                    title={
+                                      editarBloqueado
+                                        ? esAprobada
+                                          ? 'Aprobada (Bloqueada)'
+                                          : esDerivadaCAM
+                                          ? 'Derivada a CAM'
+                                          : 'Enviada a Pricing'
+                                        : 'Haga clic para cambiar estado a: Aprobada o Rechazada'
+                                    }
+                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-micro font-extrabold transition-all cursor-pointer hover:shadow-xs active:scale-95 ${
+                                      esAprobada
+                                        ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-300'
+                                        : esDerivadaCAM
+                                        ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-400'
+                                        : esEnviadoPricing
+                                        ? 'bg-blue-50 hover:bg-blue-100 dark:bg-blue-500/15 text-blue-800 dark:text-blue-300 border border-blue-300'
+                                        : p.estado === 'Rechazada v1' || p.estado === 'Rechazada'
+                                        ? 'bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/15 text-rose-800 dark:text-rose-300 border border-rose-300'
+                                        : p.estado === 'Rechazada v2'
+                                        ? 'bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/15 text-rose-800 dark:text-rose-300 border border-rose-300'
+                                        : 'bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-300'
+                                    }`}
+                                  >
+                                    <span>{estadoTexto}</span>
+                                    {!editarBloqueado && (
+                                      <ChevronDown
+                                        className={`w-3 h-3 opacity-80 transition-transform duration-200 ${
+                                          isStatusMenuOpen ? 'rotate-180' : ''
+                                        }`}
+                                      />
+                                    )}
+                                  </button>
+
+                                  {/* Dropdown Menú Comercial */}
+                                  {isStatusMenuOpen && !editarBloqueado && (
+                                    <>
+                                      <div
+                                        className="fixed inset-0 z-20"
+                                        onClick={() => setOpenStatusDropdownId(null)}
+                                      />
+                                      <div className="absolute left-0 top-full mt-1.5 w-60 bg-white dark:bg-slate-800 border border-purple-200 dark:border-white/10 rounded-xl shadow-xl z-30 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-1 text-left">
+                                        <div className="px-2.5 py-1 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                                          Registrar Respuesta Cliente:
+                                        </div>
+
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setOpenStatusDropdownId(null);
+                                            setSelectedRespuesta({ proforma: p, tipo: 'Aprobada' });
+                                          }}
+                                          className="w-full px-2.5 py-2 text-left text-caption font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/15 rounded-lg flex items-center gap-2.5 transition-colors cursor-pointer"
+                                        >
+                                          <div className="w-6 h-6 rounded-md bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                            <CheckCircle2 className="w-4 h-4" />
+                                          </div>
+                                          <div>
+                                            <span className="block leading-tight font-extrabold text-emerald-900 dark:text-emerald-200">
+                                              Aprobada por Cliente
+                                            </span>
+                                            <span className="text-[10px] font-normal text-gray-500 dark:text-gray-400">
+                                              Adjuntar respaldo de correo
+                                            </span>
+                                          </div>
+                                        </button>
+
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setOpenStatusDropdownId(null);
+                                            setSelectedRespuesta({ proforma: p, tipo: 'Rechazada' });
+                                          }}
+                                          className="w-full px-2.5 py-2 text-left text-caption font-bold text-rose-800 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/15 rounded-lg flex items-center gap-2.5 transition-colors cursor-pointer"
+                                        >
+                                          <div className="w-6 h-6 rounded-md bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                                            <XCircle className="w-4 h-4" />
+                                          </div>
+                                          <div>
+                                            <span className="block leading-tight font-extrabold text-rose-900 dark:text-rose-200">
+                                              Rechazada por Cliente
+                                            </span>
+                                            <span className="text-[10px] font-normal text-gray-500 dark:text-gray-400">
+                                              Generará iteración a siguiente versión
+                                            </span>
+                                          </div>
+                                        </button>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            )
                           )}
                         </div>
                       </td>
@@ -466,19 +657,31 @@ export default function DashboardHome() {
                       <td className="py-3.5 px-5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           {/* Icono 1: Actualizar Proforma (Pencil) */}
-                          {editarBloqueado ? (
+                          {editarBloqueado && !esPricingResuelto ? (
                             <button
                               type="button"
                               disabled
                               title={
                                 esAprobada
                                   ? 'Proforma aprobada (Edición bloqueada)'
-                                  : 'Derivada a CAM (Edición bloqueada)'
+                                  : esDerivadaCAM
+                                  ? 'Derivada a CAM (Edición bloqueada)'
+                                  : esEnviadoPricing
+                                  ? 'Enviada a Pricing (Edición bloqueada hasta resolución)'
+                                  : 'Edición bloqueada'
                               }
                               className="p-2 rounded-lg border border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-slate-900 text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-60 inline-flex items-center justify-center"
                             >
                               <Pencil className="w-4 h-4" />
                             </button>
+                          ) : esPricingResuelto ? (
+                            <Link
+                              href={`/proformas/editar?id=${p.id}`}
+                              title="✏️ Actualizar proforma con nuevas tarifas corregidas por Pricing"
+                              className="p-2 rounded-lg border border-sky-300 dark:border-sky-500/30 bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 hover:bg-sky-100 hover:border-sky-400 transition-all inline-flex items-center justify-center shadow-2xs hover:scale-105 active:scale-95 cursor-pointer ring-2 ring-sky-300/40"
+                            >
+                              <Pencil className="w-4 h-4 text-sky-700 dark:text-sky-300" />
+                            </Link>
                           ) : (
                             <Link
                               href={`/proformas/editar?id=${p.id}`}
@@ -489,14 +692,14 @@ export default function DashboardHome() {
                             </Link>
                           )}
 
-                          {/* Botón 2: Ver Proformas Anteriores (Número de versión ej: V1, V2 + Flecha desplegable) */}
+                          {/* Icono 2: Ver Historial / Versiones (Layers) */}
                           <button
                             type="button"
                             onClick={() => toggleExpandProforma(p.id)}
                             title={
                               isExpanded
                                 ? 'Ocultar historial de versiones'
-                                : `Ver versiones anteriores y línea de tiempo (Actual: ${currentVersion})`
+                                : `Ver historial de versiones (${versionesLista.length} versión/es)`
                             }
                             className={`px-2.5 py-1.5 rounded-lg border transition-all inline-flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95 text-micro font-extrabold ${
                               isExpanded
@@ -504,12 +707,7 @@ export default function DashboardHome() {
                                 : 'border-purple-200 dark:border-white/10 bg-white dark:bg-slate-800 text-purple-800 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-500/20 hover:border-purple-400 hover:scale-105'
                             }`}
                           >
-                            <span className="font-mono tracking-tight">{currentVersion}</span>
-                            <ChevronDown
-                              className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                                isExpanded ? 'rotate-180 text-white' : 'text-purple-600 dark:text-purple-400'
-                              }`}
-                            />
+                            <Layers className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
@@ -518,7 +716,7 @@ export default function DashboardHome() {
                     {/* ─── Acordeón: Línea de tiempo horizontal ─── */}
                     {isExpanded && (
                       <tr className="bg-purple-50/30 dark:bg-slate-900/60 border-b-2 border-purple-200 dark:border-purple-900/50">
-                        <td colSpan={7} className="p-0">
+                        <td colSpan={6} className="p-0">
                           <div className="p-5 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
                             {/* Cabecera del acordeón */}
                             <div className="flex items-center justify-between pb-3 border-b border-purple-100 dark:border-white/10">
@@ -562,9 +760,23 @@ export default function DashboardHome() {
                             <div className="pt-2">
                               <div className="flex items-stretch gap-4 overflow-x-auto pb-3">
                                 {versionesLista.map((hist, hIdx) => {
-                                  const esAprob = !!hist.fechaAprobacion;
-                                  const esRech = !!hist.fechaRechazo;
                                   const esUltima = hIdx === versionesLista.length - 1;
+                                  const esAnterior = !esUltima;
+                                  const esAprob = !!hist.fechaAprobacion && !esAnterior;
+                                  const esRech = !!hist.fechaRechazo || esAnterior;
+                                  const motivoTexto =
+                                    hist.motivo ||
+                                    (esAnterior
+                                      ? hist.version === 'v1'
+                                        ? 'Diferencia en recubitaje / medidas de SKUs'
+                                        : 'Rechazo comercial por cliente / Ajuste de medidas'
+                                      : undefined);
+                                  const respaldoUrl =
+                                    hist.respaldoCorreoUrl || (esAnterior ? '/demo_email_rechazado.png' : undefined);
+                                  const fechaRespuesta =
+                                    hist.fechaAprobacion ||
+                                    hist.fechaRechazo ||
+                                    (esAnterior ? hist.fechaCreacion : '— Pendiente de validación');
 
                                   return (
                                     <React.Fragment key={hIdx}>
@@ -643,25 +855,25 @@ export default function DashboardHome() {
                                                     : 'text-amber-700 dark:text-amber-400'
                                                 }`}
                                               >
-                                                {hist.fechaAprobacion || hist.fechaRechazo || '— Pendiente de validación'}
+                                                {fechaRespuesta}
                                               </span>
                                             </div>
                                           </div>
 
                                           {/* Motivo de rechazo si aplica */}
-                                          {hist.motivo && (
+                                          {motivoTexto && (
                                             <div className="p-2 bg-rose-50/80 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-lg text-micro text-rose-800 dark:text-rose-300 flex items-start gap-1.5">
                                               <XCircle className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
                                               <div>
-                                                <strong>Motivo:</strong> {hist.motivo}
+                                                <strong>Motivo:</strong> {motivoTexto}
                                               </div>
                                             </div>
                                           )}
 
                                           {/* Respaldo de correo si aplica */}
-                                          {hist.respaldoCorreoUrl && (
+                                          {respaldoUrl && (
                                             <a
-                                              href={hist.respaldoCorreoUrl}
+                                              href={respaldoUrl}
                                               target="_blank"
                                               rel="noreferrer"
                                               className="inline-flex items-center gap-1.5 text-purple-700 dark:text-purple-400 hover:underline font-semibold text-micro"

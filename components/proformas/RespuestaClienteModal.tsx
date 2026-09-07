@@ -28,10 +28,6 @@ interface RespuestaClienteModalProps {
 const MOTIVOS_RECHAZO_PREDETERMINADOS = [
   'Inconsistencia en Tarifas / Descuentos negociados (Precio)',
   'Diferencia en recubitaje / medidas de SKUs (Medidas/Cubitaje)',
-  'Falta documentación o respaldo de cliente',
-  'Error en la selección de Cuentas Corrientes',
-  'Solicitud duplicada o emitida por error',
-  'Otro motivo (Especificar)',
 ];
 
 export function RespuestaClienteModal({
@@ -66,7 +62,10 @@ export function RespuestaClienteModal({
     motivoRechazoSelect.toLowerCase().includes('precio') ||
     motivoRechazoSelect.toLowerCase().includes('descuentos');
 
-  const esSegundoRechazo = tipoRespuesta === 'Rechazada' && !esPorPrecio && conteoActual >= 1;
+  const esTercerRechazo =
+    tipoRespuesta === 'Rechazada' &&
+    !esPorPrecio &&
+    (conteoActual >= 2 || proforma.versionActual === 'v3');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -109,8 +108,10 @@ export function RespuestaClienteModal({
       nuevoConteo = conteoActual + 1;
       if (esPorPrecio) {
         nuevoEstado = 'Enviado a Pricing';
-      } else if (nuevoConteo >= 2) {
+      } else if (nuevoConteo >= 3 || proforma.versionActual === 'v3') {
         nuevoEstado = 'Derivada a CAM';
+      } else if (nuevoConteo === 2 || proforma.versionActual === 'v2') {
+        nuevoEstado = 'Rechazada v2';
       } else {
         nuevoEstado = 'Rechazada v1';
       }
@@ -150,7 +151,7 @@ export function RespuestaClienteModal({
     // Otros casos: Notificar y cerrar
     if (nuevoEstado === 'Derivada a CAM') {
       showToast(
-        `Proforma ${proforma.id} superó 2 rechazos del cliente y fue derivada automáticamente al CAM.`,
+        `Proforma ${proforma.id} (Versión V3) fue rechazada por el cliente y derivada automáticamente al CAM.`,
         'warning',
         7000,
         'Derivada a CAM'
@@ -164,7 +165,7 @@ export function RespuestaClienteModal({
       );
     } else {
       showToast(
-        `Rechazo registrado para Proforma ${proforma.id}. Habilitada para edición v2.`,
+        `Rechazo registrado para Proforma ${proforma.id}. Habilitada para edición de siguiente versión.`,
         'info',
         5500,
         'Rechazo Registrado'
@@ -312,14 +313,14 @@ export function RespuestaClienteModal({
                   )}
                 </div>
 
-                {/* Advertencia si es 2do Rechazo (CAM) */}
-                {esSegundoRechazo && (
+                {/* Advertencia si es 3er Rechazo (V3 Rechazada -> CAM) */}
+                {esTercerRechazo && (
                   <div className="p-3.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 rounded-xl text-caption text-amber-900 dark:text-amber-300 flex items-start gap-2.5 animate-in fade-in duration-200">
                     <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                     <div>
-                      <strong className="block font-bold">Segundo rechazo consecutivo</strong>
+                      <strong className="block font-bold">Límite de iteraciones alcanzado (Versión V3)</strong>
                       <p className="mt-0.5 leading-relaxed text-micro text-amber-800 dark:text-amber-300">
-                        La proforma será derivada automáticamente a la <strong>Subgerencia / Ejecutivo CAM</strong> y se bloqueará la emisión de una versión v3 estándar.
+                        Al rechazar la versión V3, la proforma será derivada automáticamente a la <strong>Subgerencia / Ejecutivo CAM</strong> para resolución directa y se cerrará el ciclo de iteraciones.
                       </p>
                     </div>
                   </div>

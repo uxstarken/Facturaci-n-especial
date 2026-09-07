@@ -29,7 +29,7 @@ export function TrazabilidadModal({ proforma, onClose }: TrazabilidadModalProps)
     },
   ];
 
-  const esDerivadaCAM = proforma.estado === 'Derivada a CAM' || (proforma.conteoRechazos || 0) >= 2;
+  const esDerivadaCAM = proforma.estado === 'Derivada a CAM' || (proforma.conteoRechazos || 0) >= 3;
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
