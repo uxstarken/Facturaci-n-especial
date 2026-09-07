@@ -52,8 +52,8 @@ export default function NuevaProformaPage() {
   const { theme } = useTheme();
   const { showToast } = useToast();
 
-  // Wizard Step state: 1 | 2
-  const [currentStep, setCurrentStep] = useState<1 | 2>(1);
+  // Wizard Step state: 1 | 2 | 3
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
 
   // Scroll to top when changing wizard step
   useEffect(() => {
@@ -283,7 +283,7 @@ export default function NuevaProformaPage() {
     : [];
 
   const getAcuerdoTipoFromCliente = (cliente: ClienteReal): string => {
-    const t = cliente.condicionesGenerales?.tarifa?.toLowerCase() || '';
+    const t = (cliente.condicionesGenerales?.tarifa || cliente.condicionesGenerales?.descuento || '').toLowerCase();
     if (t.includes('volumétrico') || t.includes('volumetrico') || t.includes('descuento')) {
       return 'Descuento volumétrico';
     }

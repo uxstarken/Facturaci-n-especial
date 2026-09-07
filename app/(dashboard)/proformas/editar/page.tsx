@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -178,7 +178,7 @@ const MOCK_SKUS_INITIAL: SkuResolutionItem[] = [
   },
 ];
 
-export default function EditarProformaPage() {
+function EditarProformaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const proformaId = searchParams.get('id') || 'PF-2026-0204';
@@ -1550,5 +1550,13 @@ export default function EditarProformaPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function EditarProformaPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-sm text-gray-500">Cargando editor de proforma...</div>}>
+      <EditarProformaContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -30,7 +30,7 @@ import { Proforma, VersionProforma } from '@/lib/types';
 import { formatCurrency } from '@/lib/utils';
 import { RespuestaClienteModal } from '@/components/proformas/RespuestaClienteModal';
 
-export default function DashboardHome() {
+function DashboardHomeContent() {
   const { user } = useAuth();
   const { theme } = useTheme();
   const { showToast } = useToast();
@@ -930,5 +930,13 @@ export default function DashboardHome() {
         />
       )}
     </div>
+  );
+}
+
+export default function DashboardHome() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-sm text-gray-500">Cargando panel de control...</div>}>
+      <DashboardHomeContent />
+    </Suspense>
   );
 }

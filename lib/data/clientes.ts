@@ -14,6 +14,7 @@ export interface CondicionCliente {
   consolidado: string;
   tieneDescuento: boolean;
   descuento: string;
+  tarifa?: string;
 }
 
 export interface ClienteReal {

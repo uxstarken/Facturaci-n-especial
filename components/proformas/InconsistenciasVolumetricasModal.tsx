@@ -14,6 +14,7 @@ interface InconsistenciasVolumetricasModalProps {
   proformaId: string;
   clienteNombre: string;
   totalOfsCount: number;
+  propuestaVariante?: '1' | '2' | '3';
   buttonGradient?: string;
   onClose: () => void;
   onDownload: () => void;
