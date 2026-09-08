@@ -106,7 +106,7 @@ export function RegistrarFacturaModal({
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-white/10 shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-200">
         
         {/* Cabecera */}
-        <div className="p-5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white relative">
+        <div className="p-5 bg-gradient-to-r from-purple-700 to-indigo-800 text-white relative">
           <button
             type="button"
             onClick={onClose}
@@ -120,7 +120,7 @@ export function RegistrarFacturaModal({
               <Receipt className="w-5 h-5 text-white" />
             </div>
             <div>
-              <span className="text-[11px] font-bold tracking-wider uppercase text-emerald-100 block">
+              <span className="text-[11px] font-bold tracking-wider uppercase text-purple-200 block">
                 Cierre del Ciclo Comercial
               </span>
               <h2 className="text-lg font-bold leading-tight">
@@ -131,10 +131,10 @@ export function RegistrarFacturaModal({
         </div>
 
         {/* Resumen Proforma */}
-        <div className="px-5 py-3 bg-emerald-50/60 dark:bg-emerald-950/20 border-b border-emerald-100 dark:border-emerald-900/30 flex items-center justify-between text-xs">
+        <div className="px-5 py-3 bg-purple-50/60 dark:bg-purple-950/20 border-b border-purple-100 dark:border-purple-900/30 flex items-center justify-between text-xs">
           <div className="space-y-0.5">
             <div className="flex items-center gap-1.5 font-bold text-gray-900 dark:text-gray-100">
-              <Building2 className="w-3.5 h-3.5 text-emerald-600" />
+              <Building2 className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
               <span>{proforma.cliente}</span>
             </div>
             <div className="text-gray-500 dark:text-gray-400 font-mono text-[11px]">
@@ -143,7 +143,7 @@ export function RegistrarFacturaModal({
           </div>
           <div className="text-right">
             <span className="text-[10px] text-gray-500 uppercase font-semibold block">Monto Facturable</span>
-            <span className="font-mono font-extrabold text-emerald-700 dark:text-emerald-400 text-sm">
+            <span className="font-mono font-extrabold text-purple-700 dark:text-purple-300 text-sm">
               {proforma.montoFormatted}
             </span>
           </div>
@@ -173,7 +173,7 @@ export function RegistrarFacturaModal({
                   if (errorMsg) setErrorMsg('');
                 }}
                 placeholder="Ej: FAC-894210 o 1092834"
-                className="w-full h-10 pl-9 pr-3 text-xs font-mono font-bold bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-white/10 rounded-xl text-gray-900 dark:text-gray-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                className="w-full h-10 pl-9 pr-3 text-xs font-mono font-bold bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-white/10 rounded-xl text-gray-900 dark:text-gray-100 outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20 transition-all"
                 required
               />
             </div>
@@ -189,16 +189,16 @@ export function RegistrarFacturaModal({
             </label>
             
             {archivoFactura || archivoNombreDemo ? (
-              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 rounded-xl flex items-center justify-between">
+              <div className="p-3 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-xl flex items-center justify-between">
                 <div className="flex items-center gap-2.5 overflow-hidden">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 flex items-center justify-center shrink-0">
                     <FileText className="w-4 h-4" />
                   </div>
                   <div className="truncate">
-                    <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200 block truncate">
+                    <span className="text-xs font-bold text-purple-950 dark:text-purple-200 block truncate">
                       {archivoFactura?.name || archivoNombreDemo}
                     </span>
-                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono">
+                    <span className="text-[10px] text-purple-700 dark:text-purple-400 font-mono">
                       {archivoFactura ? `${(archivoFactura.size / 1024).toFixed(1)} KB` : 'Documento adjunto listo'}
                     </span>
                   </div>
@@ -217,8 +217,8 @@ export function RegistrarFacturaModal({
               </div>
             ) : (
               <div className="space-y-2">
-                <label className="border-2 border-dashed border-gray-300 dark:border-white/10 hover:border-emerald-400 dark:hover:border-emerald-500 rounded-xl p-4 flex flex-col items-center justify-center gap-1.5 cursor-pointer bg-gray-50/50 dark:bg-slate-800/40 transition-colors">
-                  <Upload className="w-5 h-5 text-gray-400 group-hover:text-emerald-600" />
+                <label className="border-2 border-dashed border-gray-300 dark:border-white/10 hover:border-purple-400 dark:hover:border-purple-500 rounded-xl p-4 flex flex-col items-center justify-center gap-1.5 cursor-pointer bg-gray-50/50 dark:bg-slate-800/40 transition-colors">
+                  <Upload className="w-5 h-5 text-gray-400 group-hover:text-purple-600" />
                   <span className="text-xs font-bold text-gray-700 dark:text-gray-300 text-center">
                     Haz clic para subir o arrastra el documento de la factura
                   </span>
@@ -235,7 +235,7 @@ export function RegistrarFacturaModal({
                   <button
                     type="button"
                     onClick={handleSimularArchivo}
-                    className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer inline-flex items-center gap-1"
+                    className="text-[11px] font-semibold text-purple-700 dark:text-purple-400 hover:text-purple-800 hover:underline cursor-pointer inline-flex items-center gap-1"
                   >
                     <span>⚡ Simular documento de factura automática</span>
                   </button>
@@ -254,7 +254,7 @@ export function RegistrarFacturaModal({
               onChange={(e) => setObservaciones(e.target.value)}
               placeholder="Ej: Factura enviada a tesorería y cliente notificado..."
               rows={2}
-              className="w-full p-2.5 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-white/10 rounded-xl text-gray-900 dark:text-gray-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all resize-none"
+              className="w-full p-2.5 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-white/10 rounded-xl text-gray-900 dark:text-gray-100 outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20 transition-all resize-none"
             />
           </div>
 
@@ -270,7 +270,7 @@ export function RegistrarFacturaModal({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-extrabold shadow-md shadow-emerald-600/20 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
+              className="px-5 py-2.5 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white rounded-xl text-xs font-extrabold shadow-md shadow-purple-700/20 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>{isSubmitting ? 'Guardando...' : 'Finalizar'}</span>
