@@ -486,12 +486,8 @@ function DashboardHomeContent() {
                               {currentVersion}
                             </span>
 
-                            {/* Estado Supervisión / Pricing / Jefatura / Facturación */}
-                            {esFacturado ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-micro font-extrabold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-900 dark:text-emerald-300 border border-emerald-400 dark:border-emerald-600 shadow-2xs">
-                                <Receipt className="w-3 h-3 text-emerald-700 dark:text-emerald-400" /> Facturado · N° {p.numeroFactura || '890214'}
-                              </span>
-                            ) : esEnviadoPricing ? (
+                            {/* Estado Supervisión / Pricing / Jefatura */}
+                            {esEnviadoPricing ? (
                               <div className="inline-flex items-center gap-1.5">
                                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-micro font-extrabold bg-blue-50 dark:bg-blue-500/15 text-blue-800 dark:text-blue-300 border border-blue-300 animate-pulse">
                                   <Hourglass className="w-3 h-3 text-blue-600" /> Pendiente Pricing
@@ -540,16 +536,11 @@ function DashboardHomeContent() {
                           {esFacturado ? (
                             <div className="flex items-center gap-1.5 text-caption">
                               <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                                Factura:
+                                Cliente:
                               </span>
-                              <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800/40">
-                                <FileText className="w-3 h-3 text-emerald-600" /> {p.archivoFacturaNombre || `Factura_${p.numeroFactura || 'DOC'}.pdf`}
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-micro font-extrabold bg-emerald-50 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-300 shadow-2xs">
+                                <Receipt className="w-3 h-3 text-emerald-600" /> Facturado{p.numeroFactura ? ` · N° ${p.numeroFactura}` : ''}
                               </span>
-                              {p.fechaFacturacion && (
-                                <span className="text-[10px] text-gray-500 dark:text-gray-400 font-mono">
-                                  ({p.fechaFacturacion})
-                                </span>
-                              )}
                             </div>
                           ) : esPricingResuelto ? (
                             <div className="flex items-center gap-1.5 text-caption">
