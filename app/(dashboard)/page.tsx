@@ -560,24 +560,6 @@ function DashboardHomeContent() {
                                 ✏️ Requiere actualización del analista
                               </span>
                             </div>
-                          ) : esAprobada ? (
-                            <div className="flex items-center gap-2 text-caption">
-                              <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
-                                Cliente:
-                              </span>
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-micro font-extrabold bg-emerald-50 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-300">
-                                <Check className="w-3 h-3 text-emerald-600" /> Aprobada por Cliente
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => setSelectedFacturarProforma(p)}
-                                title="⚡ Registrar factura emitida fuera de la plataforma y finalizar proforma"
-                                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-2xs transition-all cursor-pointer hover:scale-105 active:scale-95"
-                              >
-                                <Receipt className="w-2.5 h-2.5" />
-                                <span>Facturar</span>
-                              </button>
-                            </div>
                           ) : (
                             p.estadoSupervision !== 'Pendiente_Autorizacion' && p.estadoSupervision !== 'Devuelta_Analista' && !esEnviadoPricing && (
                               <div className="flex items-center gap-1.5 text-caption">
@@ -588,11 +570,9 @@ function DashboardHomeContent() {
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      if (editarBloqueado) {
+                                      if (esFacturado || esDerivadaCAM || esEnviadoPricing) {
                                         showToast(
-                                          esAprobada
-                                            ? 'Esta proforma ya fue aprobada por el cliente.'
-                                            : esDerivadaCAM
+                                          esDerivadaCAM
                                             ? 'Esta proforma fue derivada al CAM (Gestión bloqueada).'
                                             : esFacturado
                                             ? 'Esta proforma ya fue facturada y finalizada.'
@@ -604,18 +584,20 @@ function DashboardHomeContent() {
                                       setOpenStatusDropdownId(isStatusMenuOpen ? null : p.id);
                                     }}
                                     title={
-                                      editarBloqueado
-                                        ? esAprobada
-                                          ? 'Aprobada (Bloqueada)'
-                                          : esDerivadaCAM
-                                          ? 'Derivada a CAM'
-                                          : esFacturado
-                                          ? 'Facturada'
-                                          : 'Enviada a Pricing'
-                                        : 'Haga clic para cambiar estado a: Aprobada o Rechazada'
+                                      esFacturado
+                                        ? 'Facturada (Ciclo finalizado)'
+                                        : esDerivadaCAM
+                                        ? 'Derivada a CAM'
+                                        : esEnviadoPricing
+                                        ? 'Enviada a Pricing'
+                                        : esAprobada
+                                        ? 'Aprobada por Cliente (Haga clic para Facturar)'
+                                        : 'Haga clic para cambiar estado'
                                     }
-                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-micro font-extrabold transition-all cursor-pointer hover:shadow-xs active:scale-95 ${
-                                      esDerivadaCAM
+                                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-micro font-extrabold transition-all cursor-pointer hover:shadow-xs active:scale-95 ${
+                                      esAprobada
+                                        ? 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-300'
+                                        : esDerivadaCAM
                                         ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-400'
                                         : esEnviadoPricing
                                         ? 'bg-blue-50 hover:bg-blue-100 dark:bg-blue-500/15 text-blue-800 dark:text-blue-300 border border-blue-300'
@@ -626,8 +608,9 @@ function DashboardHomeContent() {
                                         : 'bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-300'
                                     }`}
                                   >
+                                    {esAprobada && <Check className="w-3 h-3 text-emerald-600" />}
                                     <span>{estadoTexto}</span>
-                                    {!editarBloqueado && (
+                                    {!(esFacturado || esDerivadaCAM || esEnviadoPricing) && (
                                       <ChevronDown
                                         className={`w-3 h-3 opacity-80 transition-transform duration-200 ${
                                           isStatusMenuOpen ? 'rotate-180' : ''
@@ -637,58 +620,89 @@ function DashboardHomeContent() {
                                   </button>
 
                                   {/* Dropdown Menú Comercial */}
-                                  {isStatusMenuOpen && !editarBloqueado && (
+                                  {isStatusMenuOpen && !(esFacturado || esDerivadaCAM || esEnviadoPricing) && (
                                     <>
                                       <div
                                         className="fixed inset-0 z-20"
                                         onClick={() => setOpenStatusDropdownId(null)}
                                       />
-                                      <div className="absolute left-0 top-full mt-1.5 w-60 bg-white dark:bg-slate-800 border border-purple-200 dark:border-white/10 rounded-xl shadow-xl z-30 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-1 text-left">
-                                        <div className="px-2.5 py-1 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                                          Registrar Respuesta Cliente:
-                                        </div>
+                                      <div className="absolute left-0 top-full mt-1.5 w-64 bg-white dark:bg-slate-800 border border-purple-200 dark:border-white/10 rounded-xl shadow-xl z-30 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-1 text-left">
+                                        {esAprobada ? (
+                                          <>
+                                            <div className="px-2.5 py-1 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                                              Siguiente Acción Comercial:
+                                            </div>
 
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setOpenStatusDropdownId(null);
-                                            setSelectedRespuesta({ proforma: p, tipo: 'Aprobada' });
-                                          }}
-                                          className="w-full px-2.5 py-2 text-left text-caption font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/15 rounded-lg flex items-center gap-2.5 transition-colors cursor-pointer"
-                                        >
-                                          <div className="w-6 h-6 rounded-md bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                                            <CheckCircle2 className="w-4 h-4" />
-                                          </div>
-                                          <div>
-                                            <span className="block leading-tight font-extrabold text-emerald-900 dark:text-emerald-200">
-                                              Aprobada por Cliente
-                                            </span>
-                                            <span className="text-[10px] font-normal text-gray-500 dark:text-gray-400">
-                                              Adjuntar respaldo de correo
-                                            </span>
-                                          </div>
-                                        </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setOpenStatusDropdownId(null);
+                                                setSelectedFacturarProforma(p);
+                                              }}
+                                              className="w-full px-2.5 py-2 text-left text-caption font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/15 rounded-lg flex items-center gap-2.5 transition-colors cursor-pointer"
+                                            >
+                                              <div className="w-6 h-6 rounded-md bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                                <Receipt className="w-4 h-4" />
+                                              </div>
+                                              <div>
+                                                <span className="block leading-tight font-extrabold text-emerald-900 dark:text-emerald-200">
+                                                  Facturar Proforma
+                                                </span>
+                                                <span className="text-[10px] font-normal text-gray-500 dark:text-gray-400">
+                                                  Registrar N° de factura y respaldo
+                                                </span>
+                                              </div>
+                                            </button>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <div className="px-2.5 py-1 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                                              Registrar Respuesta Cliente:
+                                            </div>
 
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setOpenStatusDropdownId(null);
-                                            setSelectedRespuesta({ proforma: p, tipo: 'Rechazada' });
-                                          }}
-                                          className="w-full px-2.5 py-2 text-left text-caption font-bold text-rose-800 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/15 rounded-lg flex items-center gap-2.5 transition-colors cursor-pointer"
-                                        >
-                                          <div className="w-6 h-6 rounded-md bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
-                                            <XCircle className="w-4 h-4" />
-                                          </div>
-                                          <div>
-                                            <span className="block leading-tight font-extrabold text-rose-900 dark:text-rose-200">
-                                              Rechazada por Cliente
-                                            </span>
-                                            <span className="text-[10px] font-normal text-gray-500 dark:text-gray-400">
-                                              Generará iteración a siguiente versión
-                                            </span>
-                                          </div>
-                                        </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setOpenStatusDropdownId(null);
+                                                setSelectedRespuesta({ proforma: p, tipo: 'Aprobada' });
+                                              }}
+                                              className="w-full px-2.5 py-2 text-left text-caption font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/15 rounded-lg flex items-center gap-2.5 transition-colors cursor-pointer"
+                                            >
+                                              <div className="w-6 h-6 rounded-md bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                                <CheckCircle2 className="w-4 h-4" />
+                                              </div>
+                                              <div>
+                                                <span className="block leading-tight font-extrabold text-emerald-900 dark:text-emerald-200">
+                                                  Aprobada por Cliente
+                                                </span>
+                                                <span className="text-[10px] font-normal text-gray-500 dark:text-gray-400">
+                                                  Adjuntar respaldo de correo
+                                                </span>
+                                              </div>
+                                            </button>
+
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setOpenStatusDropdownId(null);
+                                                setSelectedRespuesta({ proforma: p, tipo: 'Rechazada' });
+                                              }}
+                                              className="w-full px-2.5 py-2 text-left text-caption font-bold text-rose-800 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/15 rounded-lg flex items-center gap-2.5 transition-colors cursor-pointer"
+                                            >
+                                              <div className="w-6 h-6 rounded-md bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                                                <XCircle className="w-4 h-4" />
+                                              </div>
+                                              <div>
+                                                <span className="block leading-tight font-extrabold text-rose-900 dark:text-rose-200">
+                                                  Rechazada por Cliente
+                                                </span>
+                                                <span className="text-[10px] font-normal text-gray-500 dark:text-gray-400">
+                                                  Generará iteración a siguiente versión
+                                                </span>
+                                              </div>
+                                            </button>
+                                          </>
+                                        )}
                                       </div>
                                     </>
                                   )}
