@@ -7,12 +7,10 @@ import {
   CheckCircle2,
   FileText,
   Receipt,
-  Calendar,
   Hash,
   Trash2,
   AlertCircle,
   Building2,
-  DollarSign,
 } from 'lucide-react';
 import { Proforma } from '@/lib/types';
 import { useToast } from '@/context/toast-context';
@@ -182,23 +180,6 @@ export function RegistrarFacturaModal({
             <span className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 block">
               Ingresa el folio o número correlativo generado en el sistema de facturación.
             </span>
-          </div>
-
-          {/* Fecha de Emisión */}
-          <div>
-            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-              Fecha de Emisión <span className="text-rose-500">*</span>
-            </label>
-            <div className="relative flex items-center">
-              <Calendar className="w-4 h-4 absolute left-3 text-gray-400 pointer-events-none" />
-              <input
-                type="date"
-                value={fechaFacturacion}
-                onChange={(e) => setFechaFacturacion(e.target.value)}
-                className="w-full h-10 pl-9 pr-3 text-xs bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-white/10 rounded-xl text-gray-900 dark:text-gray-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                required
-              />
-            </div>
           </div>
 
           {/* Adjuntar Documento de Respaldo */}
