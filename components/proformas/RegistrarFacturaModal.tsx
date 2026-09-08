@@ -273,7 +273,7 @@ export function RegistrarFacturaModal({
               className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-extrabold shadow-md shadow-emerald-600/20 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>{isSubmitting ? 'Guardando...' : 'Finalizar y Marcar como Facturado'}</span>
+              <span>{isSubmitting ? 'Guardando...' : 'Finalizar'}</span>
             </button>
           </div>
         </form>
