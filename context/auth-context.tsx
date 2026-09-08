@@ -42,32 +42,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = (email: string, pass: string) => {
     localStorage.removeItem('starken_fe_logged_out');
-    const found = MOCK_USERS.find((u) => u.email === email && u.password === pass);
-    if (!found) {
-      return { success: false, message: 'Credenciales incorrectas' };
+    
+    // Si coincide con alguno de los usuarios mock predefinidos, tomar sus datos
+    const found = MOCK_USERS.find(
+      (u) => u.email.toLowerCase() === email.trim().toLowerCase()
+    );
+
+    let loggedInUser: User;
+    if (found) {
+      const { password, ...userWithoutPass } = found;
+      loggedInUser = userWithoutPass;
+    } else {
+      // Si ingresa cualquier otro correo, crear usuario dinámico
+      const cleanEmail = email.trim() || 'usuario@starken.cl';
+      const namePart = cleanEmail.split('@')[0].replace(/[._-]/g, ' ');
+      const formattedName = namePart
+        .split(' ')
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+
+      loggedInUser = {
+        id: `u-${Date.now()}`,
+        name: formattedName || 'Usuario Starken',
+        email: cleanEmail,
+        role: 'Analista',
+        requires2FA: false,
+      };
     }
 
-    const { password, ...userWithoutPass } = found;
-
-    if (userWithoutPass.requires2FA) {
-      setPendingUser(userWithoutPass);
-      return { success: true, requires2FA: true };
-    }
-
-    setUser(userWithoutPass);
-    localStorage.setItem('starken_fe_user', JSON.stringify(userWithoutPass));
+    // Permitir acceso directo para cualquier correo y contraseña
+    setUser(loggedInUser);
+    localStorage.setItem('starken_fe_user', JSON.stringify(loggedInUser));
     return { success: true, requires2FA: false };
   };
 
   const verify2FA = (code: string) => {
-    if (code === '123456' && pendingUser) {
+    if (pendingUser) {
       localStorage.removeItem('starken_fe_logged_out');
       setUser(pendingUser);
       localStorage.setItem('starken_fe_user', JSON.stringify(pendingUser));
       setPendingUser(null);
       return true;
     }
-    return false;
+    return true;
   };
 
   const logout = () => {
