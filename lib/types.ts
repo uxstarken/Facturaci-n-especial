@@ -15,6 +15,7 @@ export type ProformaEstado =
   | 'Rechazada'
   | 'En revisión'
   | 'Aprobada por Cliente'
+  | 'Facturado'
   | 'Rechazada v1'
   | 'Rechazada v2'
   | 'Derivada a CAM'
@@ -35,7 +36,8 @@ export type EstadoComercial =
   | 'Enviada_Cliente'
   | 'Aprobada_Cliente'
   | 'Rechazada_Cliente'
-  | 'Derivada_CAM';
+  | 'Derivada_CAM'
+  | 'Facturado';
 
 export interface VersionHistoryItem {
   version: 'v1' | 'v2' | 'v3';
@@ -68,6 +70,9 @@ export interface Proforma {
   conteoRechazos?: number;
   historialVersiones?: VersionHistoryItem[];
   respaldoCorreo?: string;
+  numeroFactura?: string;
+  archivoFacturaNombre?: string;
+  fechaFacturacion?: string;
 }
 
 export interface AuditLog {
@@ -75,7 +80,7 @@ export interface AuditLog {
   ts: string;
   usuario: string;
   rol: Role;
-  accion: 'Creación' | 'Aprobación' | 'Rechazo' | 'Login';
+  accion: 'Creación' | 'Aprobación' | 'Rechazo' | 'Login' | 'Facturación';
   recurso: string;
   ip: string;
 }

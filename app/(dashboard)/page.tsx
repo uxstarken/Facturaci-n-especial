@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Check,
   Tag,
+  Receipt,
 } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { useTheme } from '@/context/theme-context';
@@ -29,6 +30,7 @@ import { MOCK_PROFORMAS } from '@/lib/mock-data';
 import { Proforma, VersionProforma } from '@/lib/types';
 import { formatCurrency } from '@/lib/utils';
 import { RespuestaClienteModal } from '@/components/proformas/RespuestaClienteModal';
+import { RegistrarFacturaModal } from '@/components/proformas/RegistrarFacturaModal';
 
 function DashboardHomeContent() {
   const { user } = useAuth();
@@ -51,6 +53,9 @@ function DashboardHomeContent() {
     proforma: Proforma;
     tipo: 'Aprobada' | 'Rechazada';
   } | null>(null);
+
+  // Modal para Registrar Factura Emitida
+  const [selectedFacturarProforma, setSelectedFacturarProforma] = useState<Proforma | null>(null);
 
   const hasShownToastRef = useRef(false);
 
@@ -387,11 +392,12 @@ function DashboardHomeContent() {
             <tbody className="divide-y divide-gray-100 dark:divide-white/5">
               {filteredProformas.map((p) => {
                 const isNewlyCreated = highlightedId === p.id;
+                const esFacturado = p.estado === 'Facturado';
                 const esEnviadoPricing = p.estado === 'Enviado a Pricing';
                 const esPricingResuelto = p.estado === 'Tarifas Corregidas por Pricing' || p.estadoSupervision === 'Pricing_Resuelto';
                 const esDerivadaCAM = p.estado === 'Derivada a CAM' || (p.conteoRechazos || 0) >= 3;
                 const esAprobada = p.estado === 'Aprobada por Cliente' || p.estado === 'Aprobada';
-                const editarBloqueado = esDerivadaCAM || esAprobada || esEnviadoPricing;
+                const editarBloqueado = esDerivadaCAM || esAprobada || esEnviadoPricing || esFacturado;
                 const isExpanded = expandedProformaId === p.id;
                 const isStatusMenuOpen = openStatusDropdownId === p.id;
 
@@ -405,7 +411,9 @@ function DashboardHomeContent() {
                   p.versionActual?.toUpperCase() ||
                   'V1';
 
-                const estadoTexto = esDerivadaCAM
+                const estadoTexto = esFacturado
+                  ? 'Facturado'
+                  : esDerivadaCAM
                   ? 'Derivada a CAM'
                   : esAprobada
                   ? 'Aprobada por Cliente'
@@ -463,7 +471,7 @@ function DashboardHomeContent() {
                          ══════════════════════════════════════════════════════════════════════ */}
                       <td className="py-3.5 px-5">
                         <div className="space-y-1.5">
-                          {/* Fila 1: Pastilla de Versión + Estado de Supervisión / Pricing */}
+                          {/* Fila 1: Pastilla de Versión + Estado de Supervisión / Facturación / Pricing */}
                           <div className="flex items-center gap-2 flex-wrap">
                             <span
                               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-mono text-[11px] font-extrabold ${
@@ -478,8 +486,12 @@ function DashboardHomeContent() {
                               {currentVersion}
                             </span>
 
-                            {/* Estado Supervisión / Pricing / Jefatura */}
-                            {esEnviadoPricing ? (
+                            {/* Estado Supervisión / Pricing / Jefatura / Facturación */}
+                            {esFacturado ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-micro font-extrabold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-900 dark:text-emerald-300 border border-emerald-400 dark:border-emerald-600 shadow-2xs">
+                                <Receipt className="w-3 h-3 text-emerald-700 dark:text-emerald-400" /> Facturado · N° {p.numeroFactura || '890214'}
+                              </span>
+                            ) : esEnviadoPricing ? (
                               <div className="inline-flex items-center gap-1.5">
                                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-micro font-extrabold bg-blue-50 dark:bg-blue-500/15 text-blue-800 dark:text-blue-300 border border-blue-300 animate-pulse">
                                   <Hourglass className="w-3 h-3 text-blue-600" /> Pendiente Pricing
@@ -525,7 +537,21 @@ function DashboardHomeContent() {
                           </div>
 
                           {/* Fila 2: Sub-estado Comercial con Cliente */}
-                          {esPricingResuelto ? (
+                          {esFacturado ? (
+                            <div className="flex items-center gap-1.5 text-caption">
+                              <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                                Factura:
+                              </span>
+                              <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800/40">
+                                <FileText className="w-3 h-3 text-emerald-600" /> {p.archivoFacturaNombre || `Factura_${p.numeroFactura || 'DOC'}.pdf`}
+                              </span>
+                              {p.fechaFacturacion && (
+                                <span className="text-[10px] text-gray-500 dark:text-gray-400 font-mono">
+                                  ({p.fechaFacturacion})
+                                </span>
+                              )}
+                            </div>
+                          ) : esPricingResuelto ? (
                             <div className="flex items-center gap-1.5 text-caption">
                               <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
                                 Cliente:
@@ -533,6 +559,24 @@ function DashboardHomeContent() {
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-micro font-bold bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 border border-sky-200">
                                 ✏️ Requiere actualización del analista
                               </span>
+                            </div>
+                          ) : esAprobada ? (
+                            <div className="flex items-center gap-2 text-caption">
+                              <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                                Cliente:
+                              </span>
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-micro font-extrabold bg-emerald-50 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-300">
+                                <Check className="w-3 h-3 text-emerald-600" /> Aprobada por Cliente
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedFacturarProforma(p)}
+                                title="⚡ Registrar factura emitida fuera de la plataforma y finalizar proforma"
+                                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-2xs transition-all cursor-pointer hover:scale-105 active:scale-95"
+                              >
+                                <Receipt className="w-2.5 h-2.5" />
+                                <span>Facturar</span>
+                              </button>
                             </div>
                           ) : (
                             p.estadoSupervision !== 'Pendiente_Autorizacion' && p.estadoSupervision !== 'Devuelta_Analista' && !esEnviadoPricing && (
@@ -550,6 +594,8 @@ function DashboardHomeContent() {
                                             ? 'Esta proforma ya fue aprobada por el cliente.'
                                             : esDerivadaCAM
                                             ? 'Esta proforma fue derivada al CAM (Gestión bloqueada).'
+                                            : esFacturado
+                                            ? 'Esta proforma ya fue facturada y finalizada.'
                                             : 'Esta proforma está en revisión de Pricing (Gestión bloqueada).',
                                           'info'
                                         );
@@ -563,13 +609,13 @@ function DashboardHomeContent() {
                                           ? 'Aprobada (Bloqueada)'
                                           : esDerivadaCAM
                                           ? 'Derivada a CAM'
+                                          : esFacturado
+                                          ? 'Facturada'
                                           : 'Enviada a Pricing'
                                         : 'Haga clic para cambiar estado a: Aprobada o Rechazada'
                                     }
                                     className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-micro font-extrabold transition-all cursor-pointer hover:shadow-xs active:scale-95 ${
-                                      esAprobada
-                                        ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-300'
-                                        : esDerivadaCAM
+                                      esDerivadaCAM
                                         ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-400'
                                         : esEnviadoPricing
                                         ? 'bg-blue-50 hover:bg-blue-100 dark:bg-blue-500/15 text-blue-800 dark:text-blue-300 border border-blue-300'
@@ -662,8 +708,10 @@ function DashboardHomeContent() {
                               type="button"
                               disabled
                               title={
-                                esAprobada
-                                  ? 'Proforma aprobada (Edición bloqueada)'
+                                esFacturado
+                                  ? 'Proforma facturada y finalizada (Ciclo completado)'
+                                  : esAprobada
+                                  ? 'Proforma aprobada por cliente (Edición bloqueada)'
                                   : esDerivadaCAM
                                   ? 'Derivada a CAM (Edición bloqueada)'
                                   : esEnviadoPricing
@@ -926,6 +974,15 @@ function DashboardHomeContent() {
           proforma={selectedRespuesta.proforma}
           initialTipo={selectedRespuesta.tipo}
           onClose={() => setSelectedRespuesta(null)}
+          onSuccess={handleProformaActualizada}
+        />
+      )}
+
+      {/* Modal: Registrar Factura Emitida */}
+      {selectedFacturarProforma && (
+        <RegistrarFacturaModal
+          proforma={selectedFacturarProforma}
+          onClose={() => setSelectedFacturarProforma(null)}
           onSuccess={handleProformaActualizada}
         />
       )}

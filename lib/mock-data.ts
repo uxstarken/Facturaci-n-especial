@@ -179,6 +179,34 @@ export const MOCK_PROFORMAS: Proforma[] = [
       },
     ],
   },
+  {
+    id: 'PF-2025-0138',
+    cliente: 'Cencosud Retail S.A.',
+    rut: '81.201.000-K',
+    cuentaCorrienteId: 'CTA-8012',
+    monto: 12450000,
+    montoFormatted: '$12.450.000',
+    estado: 'Facturado',
+    versionActual: 'v1',
+    estadoSupervision: 'No_Requiere',
+    estadoComercial: 'Facturado',
+    fecha: '18/07/2025 11:20',
+    tipoAcuerdo: 'Acuerdo marco',
+    conteoRechazos: 0,
+    numeroFactura: 'FAC-890214',
+    fechaFacturacion: '19/07/2025',
+    archivoFacturaNombre: 'Factura_FAC-890214_Cencosud.pdf',
+    respaldoCorreo: 'correo_aprobacion_cencosud.png',
+    historialVersiones: [
+      {
+        version: 'v1',
+        fechaCreacion: '18/07/2025 11:20',
+        fechaAprobacion: '18/07/2025 16:30',
+        monto: 12450000,
+        respaldoCorreoUrl: '/demo_email_aprobado.png',
+      },
+    ],
+  },
 ];
 
 export const MOCK_AUDIT: AuditLog[] = [
