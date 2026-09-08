@@ -22,6 +22,7 @@ import {
   Check,
   Tag,
   Receipt,
+  Zap,
 } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { useTheme } from '@/context/theme-context';
@@ -547,9 +548,14 @@ function DashboardHomeContent() {
                               <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
                                 Cliente:
                               </span>
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-micro font-bold bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 border border-sky-200">
-                                ✏️ Requiere actualización del analista
-                              </span>
+                              <Link
+                                href={`/proformas/editar?id=${p.id}&tipo=pricing`}
+                                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-micro font-extrabold bg-sky-100 hover:bg-sky-200 dark:bg-sky-500/20 text-sky-900 dark:text-sky-300 border border-sky-300 dark:border-sky-500/40 transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-2xs group"
+                                title="⚡ Pricing resolvió las tarifas. Haz clic para emitir la Proforma V2 con los nuevos valores."
+                              >
+                                <Zap className="w-3 h-3 text-sky-600 dark:text-sky-400 group-hover:animate-bounce" />
+                                <span>⚡ Emitir V2 con Tarifas de Pricing</span>
+                              </Link>
                             </div>
                           ) : (
                             p.estadoSupervision !== 'Pendiente_Autorizacion' && p.estadoSupervision !== 'Devuelta_Analista' && !esEnviadoPricing && (
@@ -729,7 +735,7 @@ function DashboardHomeContent() {
                             </button>
                           ) : esPricingResuelto ? (
                             <Link
-                              href={`/proformas/editar?id=${p.id}`}
+                              href={`/proformas/editar?id=${p.id}&tipo=pricing`}
                               title="✏️ Actualizar proforma con nuevas tarifas corregidas por Pricing"
                               className="p-2 rounded-lg border border-sky-300 dark:border-sky-500/30 bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 hover:bg-sky-100 hover:border-sky-400 transition-all inline-flex items-center justify-center shadow-2xs hover:scale-105 active:scale-95 cursor-pointer ring-2 ring-sky-300/40"
                             >

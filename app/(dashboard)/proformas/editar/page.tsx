@@ -34,6 +34,11 @@ import {
   Eye,
   ChevronDown,
   UserCheck,
+  Tag,
+  DollarSign,
+  TrendingDown,
+  Building2,
+  Calendar,
 } from 'lucide-react';
 import { useTheme } from '@/context/theme-context';
 import { useToast } from '@/context/toast-context';
@@ -194,6 +199,54 @@ function EditarProformaContent() {
   const [skusList, setSkusList] = useState<SkuResolutionItem[]>(MOCK_SKUS_INITIAL);
   const [activeTab, setActiveTab] = useState<'todos' | 'accion' | 'ia' | 'manual' | 'historico'>('todos');
   const [searchTerm, setSearchTerm] = useState('');
+
+  // DETECCIÓN DE MODO: MEDICIONES (SKU) VS TARIFAS (PRICING)
+  const tipoParam = searchParams.get('tipo');
+  const isPricingModeInitial =
+    tipoParam === 'pricing' ||
+    searchParams.get('motivo') === 'tarifa' ||
+    proformaId === 'PF-2025-0141';
+
+  const [activeFlowMode, setActiveFlowMode] = useState<'medidas' | 'pricing'>(
+    isPricingModeInitial ? 'pricing' : 'medidas'
+  );
+
+  // DATOS DEL FLUJO DE PRICING
+  const pricingMontoOriginal = 6800000;
+  const pricingMontoV2 = 5900000;
+  const pricingAjuste = -900000;
+  const pricingPorcentaje = -13.2;
+
+  const handleDescargarDetallePricing = () => {
+    const header = 'OF,Tramo_Servicio,Total_Bultos,Tarifa_Original_V1,Tarifa_Corregida_Pricing_V2,Total_Facturable_V2,Estado_Pricing\n';
+    const rows = [
+      'OF-9801 a OF-10120,Distribucion Metropolitana (RM),320,13600,11800,3776000,Corregido segun Adenda 2026',
+      'OF-10121 a OF-10300,Distribucion Regional (V Region),180,13600,11800,2124000,Corregido segun Adenda 2026',
+    ].join('\n');
+
+    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+    const file = new File([blob], `Detalle_Tarifario_Pricing_${proformaId}_V2.csv`, { type: 'text/csv' });
+    const element = document.createElement('a');
+    element.href = URL.createObjectURL(file);
+    element.download = `Detalle_Tarifario_Pricing_${proformaId}_V2.xlsx`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+
+    showToast(`Detalle tarifario recalculado por Pricing para ${proformaId} descargado.`, 'success', 4000, 'Descarga completada');
+  };
+
+  const handleGenerarProformaV2Pricing = () => {
+    showToast(
+      `Proforma V2 generada exitosamente con las nuevas tarifas de Pricing ($5.900.000). Enviada a V°B° de Jefatura.`,
+      'success',
+      6000,
+      'Proforma V2 Generada'
+    );
+    setTimeout(() => {
+      router.push(`/?highlight=${proformaId}&toast=solicitada&v2=true&monto=${pricingMontoV2}`);
+    }, 1000);
+  };
 
   // MODAL PARA REVISAR / EDITAR SUGERENCIA IA
   const [editingIaItem, setEditingIaItem] = useState<SkuResolutionItem | null>(null);
@@ -529,8 +582,8 @@ function EditarProformaContent() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
-      {/* Botón Volver */}
-      <div>
+      {/* Botón Volver y Selector de Modo */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <Link
           href="/"
           className="inline-flex items-center gap-1.5 text-body text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 font-semibold transition-colors"
@@ -538,38 +591,384 @@ function EditarProformaContent() {
           <ArrowLeft className="w-4 h-4" />
           Volver al panel principal
         </Link>
-      </div>
 
-      {/* Encabezado Principal con Botón de Descarga */}
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-purple-900/10 dark:border-white/10 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-mono font-extrabold text-micro bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300 px-2.5 py-0.5 rounded-md">
-              {proformaId}
-            </span>
-            <span className="text-micro font-bold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/15 px-2 py-0.5 rounded-md">
-              Rechazada por Medidas/Cubitaje (v1)
-            </span>
-          </div>
-          <h1 className="text-h1 font-bold text-gray-900 dark:text-gray-100">
-            Actualizar y Regularizar Proforma por SKU
-          </h1>
-          <p className="text-caption text-gray-600 dark:text-gray-400 mt-1">
-            Descarga la planilla base, ajusta las mediciones y procesa el cruce automatizado contra el maestro y agente IA.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
+        {/* Selector de Modo de Regularización */}
+        <div className="inline-flex items-center p-1 bg-gray-100 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-white/10 text-xs shadow-2xs">
           <button
             type="button"
-            onClick={handleDownloadPlantilla}
-            className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-purple-200 dark:border-white/10 hover:bg-purple-50 dark:hover:bg-purple-500/10 text-purple-700 dark:text-purple-300 rounded-xl text-caption font-bold transition-all inline-flex items-center gap-2 shadow-2xs cursor-pointer hover:scale-105 active:scale-95"
+            onClick={() => setActiveFlowMode('pricing')}
+            className={`px-3.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              activeFlowMode === 'pricing'
+                ? 'bg-sky-600 text-white shadow-xs'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            }`}
           >
-            <Download className="w-4 h-4" />
-            <span>Descargar Planilla Base</span>
+            <Tag className="w-3.5 h-3.5" />
+            <span>Resolución Tarifas (Pricing)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveFlowMode('medidas')}
+            className={`px-3.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              activeFlowMode === 'medidas'
+                ? 'bg-purple-600 text-white shadow-xs'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            }`}
+          >
+            <UploadCloud className="w-3.5 h-3.5" />
+            <span>Regularización por Medidas (SKU)</span>
           </button>
         </div>
       </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          VISTA 1: FLUJO DE TARIFAS CORREGIDAS POR PRICING (RECOMENDADA)
+         ══════════════════════════════════════════════════════════════════════ */}
+      {activeFlowMode === 'pricing' ? (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          {/* Encabezado Principal Pricing */}
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-sky-300 dark:border-sky-500/30 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-mono font-extrabold text-micro bg-sky-100 dark:bg-sky-500/20 text-sky-800 dark:text-sky-300 px-2.5 py-0.5 rounded-md">
+                  {proformaId}
+                </span>
+                <span className="text-micro font-bold text-sky-800 dark:text-sky-300 bg-sky-50 dark:bg-sky-500/15 border border-sky-300 px-2.5 py-0.5 rounded-md flex items-center gap-1">
+                  <Tag className="w-3 h-3 text-sky-600 dark:text-sky-400" />
+                  Rechazada por Tarifa/Precio · Resuelta por Pricing
+                </span>
+              </div>
+              <h1 className="text-h1 font-bold text-gray-900 dark:text-gray-100">
+                Actualizar Proforma con Nuevas Tarifas de Pricing
+              </h1>
+              <p className="text-caption text-gray-600 dark:text-gray-400 mt-1">
+                El equipo de Pricing corrigió los tramos tarifarios en el maestro. Revisa el impacto económico del nuevo valor y genera la versión V2 para enviarla a visto bueno de Jefatura.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleDescargarDetallePricing}
+                className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-sky-300 dark:border-sky-500/30 hover:bg-sky-50 dark:hover:bg-sky-500/10 text-sky-800 dark:text-sky-300 rounded-xl text-caption font-bold transition-all inline-flex items-center gap-2 shadow-2xs cursor-pointer hover:scale-105 active:scale-95"
+              >
+                <Download className="w-4 h-4" />
+                <span>Descargar Detalle Tarifario</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Grid en 2 Columnas: Detalle Original V1 (Izquierda) + Resolución de Pricing (Derecha) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* Columna Izquierda: Detalle de la Proforma Original V1 */}
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-purple-900/10 dark:border-white/10 p-6 shadow-sm flex flex-col justify-between space-y-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-white/10">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 flex items-center justify-center font-bold">
+                      <FileSpreadsheet className="w-4 h-4" />
+                    </div>
+                    <h3 className="text-h2 font-bold text-gray-900 dark:text-gray-100">
+                      Detalle de la Proforma Original
+                    </h3>
+                  </div>
+                  <span className="text-micro font-extrabold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded">
+                    Versión 1
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 text-caption">
+                  <div>
+                    <span className="text-micro text-gray-500 dark:text-gray-400 block font-medium">Cliente</span>
+                    <span className="font-bold text-gray-900 dark:text-gray-100 text-body">
+                      Retail Logistics Chile S.A.
+                    </span>
+                    <span className="text-micro font-mono text-gray-400 block">RUT: 76.452.120-K</span>
+                  </div>
+
+                  <div>
+                    <span className="text-micro text-gray-500 dark:text-gray-400 block font-medium">Cuenta Corriente</span>
+                    <span className="font-mono font-bold text-purple-700 dark:text-purple-400 text-body block">
+                      CTA-001
+                    </span>
+                    <span className="text-micro text-gray-400">Santiago Centro Distribución</span>
+                  </div>
+
+                  <div>
+                    <span className="text-micro text-gray-500 dark:text-gray-400 block font-medium">Total OFs Involucradas</span>
+                    <span className="font-mono font-extrabold text-gray-900 dark:text-gray-100 text-body">
+                      500 Órdenes de Flete
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className="text-micro text-gray-500 dark:text-gray-400 block font-medium">Monto Original Facturado</span>
+                    <span className="font-mono font-extrabold text-gray-900 dark:text-gray-100 text-body">
+                      {formatCurrency(pricingMontoOriginal)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Motivo de Rechazo por Precio */}
+                <div className="p-3.5 bg-rose-50/80 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl text-caption text-rose-900 dark:text-rose-200 flex items-start gap-2.5">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block font-bold">Objeción de Tarifa / Precio del Cliente:</strong>
+                    <p className="text-micro text-rose-800 dark:text-rose-300 mt-0.5">
+                      "La tarifa unitaria aplicada por bulto no coincide con la adenda de contrato 2026 negociada para distribución central."
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 text-micro text-gray-400 font-medium">
+                💡 Esta proforma fue derivada y resuelta directamente por el equipo de Pricing.
+              </div>
+            </div>
+
+            {/* Columna Derecha: Resolución de Pricing */}
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-sky-300 dark:border-sky-500/30 p-6 shadow-sm flex flex-col justify-between space-y-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-white/10">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-sky-100 dark:bg-sky-500/20 text-sky-700 dark:text-sky-300 flex items-center justify-center font-bold">
+                      <Tag className="w-4 h-4" />
+                    </div>
+                    <h3 className="text-h2 font-bold text-gray-900 dark:text-gray-100">
+                      Resolución y Dictamen de Pricing
+                    </h3>
+                  </div>
+                  <span className="text-micro font-extrabold text-sky-900 dark:text-sky-200 bg-sky-100 dark:bg-sky-500/20 border border-sky-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-sky-600 dark:text-sky-400" />
+                    Tarifa Corregida en Maestro
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-caption">
+                  <div className="bg-sky-50/50 dark:bg-sky-950/20 p-2.5 rounded-xl border border-sky-100 dark:border-sky-900/30">
+                    <span className="text-micro font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
+                      Analista Pricing
+                    </span>
+                    <strong className="text-gray-900 dark:text-gray-100 font-bold block">
+                      Carlos Mendoza
+                    </strong>
+                    <span className="text-[10px] text-sky-700 dark:text-sky-400">Jefe de Pricing Starken</span>
+                  </div>
+
+                  <div className="bg-sky-50/50 dark:bg-sky-950/20 p-2.5 rounded-xl border border-sky-100 dark:border-sky-900/30">
+                    <span className="text-micro font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
+                      Fecha / Ticket
+                    </span>
+                    <strong className="text-gray-900 dark:text-gray-100 font-mono block">
+                      Hoy 11:45 hrs
+                    </strong>
+                    <span className="text-[10px] text-gray-400 font-mono">Ticket #PRC-2026-0941</span>
+                  </div>
+                </div>
+
+                {/* Dictamen Técnico de Pricing */}
+                <div className="p-3.5 bg-sky-50/80 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800/40 rounded-xl text-caption text-sky-950 dark:text-sky-200 flex items-start gap-2.5">
+                  <ShieldCheck className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block font-bold">Dictamen Técnico y Corrección Aplicada:</strong>
+                    <p className="text-micro text-sky-900 dark:text-sky-300 mt-0.5 leading-relaxed">
+                      "Se verificó la cláusula 4.2 del anexo 2026. Se redujo la tarifa base unitaria de <strong>$13.600</strong> a <strong>$11.800</strong> para el tramo metropolitano y regional. El recálculo automático aplica a las 500 órdenes de flete."
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 text-micro text-sky-800 dark:text-sky-300 font-bold flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-sky-600" />
+                <span>Las nuevas tarifas ya están sincronizadas en el motor de tarificación.</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Bloque Comparativo de Impacto Económico y Emisión V2 */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-purple-900/10 dark:border-white/10 p-6 shadow-sm space-y-6">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-white/10 flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold">
+                  <DollarSign className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-h2 font-bold text-gray-900 dark:text-gray-100">
+                    Comparativo de Impacto Económico y Emisión V2
+                  </h3>
+                  <p className="text-caption text-gray-500 dark:text-gray-400">
+                    Resumen del ajuste tarifario calculado para las 500 órdenes de flete
+                  </p>
+                </div>
+              </div>
+
+              <span className="px-3 py-1 bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-300 text-emerald-800 dark:text-emerald-300 rounded-full text-micro font-extrabold flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-emerald-600" />
+                Recálculo 100% Validado
+              </span>
+            </div>
+
+            {/* 3 Métricas Destacadas */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 rounded-xl bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-white/10 space-y-1">
+                <span className="text-micro font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
+                  Monto Original (V1)
+                </span>
+                <span className="text-2xl font-mono font-extrabold text-gray-900 dark:text-gray-100 block">
+                  {formatCurrency(pricingMontoOriginal)}
+                </span>
+                <span className="text-micro text-gray-400">Tarifa previa objetada</span>
+              </div>
+
+              <div className="p-4 rounded-xl bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800/40 space-y-1">
+                <span className="text-micro font-bold text-sky-800 dark:text-sky-300 uppercase tracking-wider block flex items-center gap-1">
+                  <TrendingDown className="w-3.5 h-3.5 text-sky-600" /> Ajuste Tarifario Pricing
+                </span>
+                <span className="text-2xl font-mono font-extrabold text-sky-700 dark:text-sky-300 block">
+                  {formatCurrency(pricingAjuste)} ({pricingPorcentaje}%)
+                </span>
+                <span className="text-micro text-sky-700 dark:text-sky-400">Diferencia a favor del cliente</span>
+              </div>
+
+              <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border-2 border-emerald-400 dark:border-emerald-600/50 space-y-1 shadow-2xs">
+                <span className="text-micro font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider block flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Nuevo Monto Facturable (V2)
+                </span>
+                <span className="text-2xl font-mono font-extrabold text-emerald-700 dark:text-emerald-300 block">
+                  {formatCurrency(pricingMontoV2)}
+                </span>
+                <span className="text-micro text-emerald-700 dark:text-emerald-400 font-bold">Monto final de la nueva proforma</span>
+              </div>
+            </div>
+
+            {/* Tabla Detalle por Tramo */}
+            <div className="border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden text-caption">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-gray-50 dark:bg-slate-900/80 text-micro text-gray-600 dark:text-gray-400 uppercase font-bold border-b border-gray-200 dark:border-white/10">
+                  <tr>
+                    <th className="py-3 px-4">Tramo / Servicio</th>
+                    <th className="py-3 px-4 text-center">OFs Involucradas</th>
+                    <th className="py-3 px-4 text-right">Tarifa Original V1</th>
+                    <th className="py-3 px-4 text-right">Tarifa Corregida Pricing (V2)</th>
+                    <th className="py-3 px-4 text-right">Subtotal Facturable V2</th>
+                    <th className="py-3 px-4 text-center">Estado</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-white/5 font-mono">
+                  <tr className="hover:bg-purple-50/30 dark:hover:bg-white/5">
+                    <td className="py-3 px-4 font-sans font-bold text-gray-900 dark:text-gray-100">
+                      Distribución Metropolitana (RM)
+                    </td>
+                    <td className="py-3 px-4 text-center font-bold">320 OFs</td>
+                    <td className="py-3 px-4 text-right text-gray-400 line-through">$13.600</td>
+                    <td className="py-3 px-4 text-right font-bold text-sky-700 dark:text-sky-400">$11.800</td>
+                    <td className="py-3 px-4 text-right font-extrabold text-gray-900 dark:text-gray-100">
+                      $3.776.000
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className="px-2 py-0.5 bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300 rounded text-micro font-sans font-bold">
+                        ✓ Corregido
+                      </span>
+                    </td>
+                  </tr>
+
+                  <tr className="hover:bg-purple-50/30 dark:hover:bg-white/5">
+                    <td className="py-3 px-4 font-sans font-bold text-gray-900 dark:text-gray-100">
+                      Distribución Regional (V Región)
+                    </td>
+                    <td className="py-3 px-4 text-center font-bold">180 OFs</td>
+                    <td className="py-3 px-4 text-right text-gray-400 line-through">$13.600</td>
+                    <td className="py-3 px-4 text-right font-bold text-sky-700 dark:text-sky-400">$11.800</td>
+                    <td className="py-3 px-4 text-right font-extrabold text-gray-900 dark:text-gray-100">
+                      $2.124.000
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className="px-2 py-0.5 bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300 rounded text-micro font-sans font-bold">
+                        ✓ Corregido
+                      </span>
+                    </td>
+                  </tr>
+
+                  <tr className="bg-purple-50/40 dark:bg-slate-900 font-bold border-t-2 border-purple-200 dark:border-purple-800/40">
+                    <td className="py-3 px-4 font-sans font-extrabold text-purple-950 dark:text-purple-200">
+                      Total Consolidado Proforma V2
+                    </td>
+                    <td className="py-3 px-4 text-center font-extrabold text-purple-900 dark:text-purple-300">
+                      500 OFs
+                    </td>
+                    <td className="py-3 px-4 text-right text-gray-400">-</td>
+                    <td className="py-3 px-4 text-right text-gray-400">-</td>
+                    <td className="py-3 px-4 text-right font-extrabold text-emerald-700 dark:text-emerald-400 text-sm">
+                      {formatCurrency(pricingMontoV2)}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 rounded text-micro font-sans font-extrabold">
+                        Listo para Emisión
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Botones de Acción de Pricing */}
+            <div className="flex items-center justify-between pt-2 flex-wrap gap-4 border-t border-gray-100 dark:border-white/10">
+              <button
+                type="button"
+                onClick={handleDescargarDetallePricing}
+                className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-purple-200 dark:border-white/10 hover:bg-purple-50 dark:hover:bg-purple-500/10 text-purple-700 dark:text-purple-300 rounded-xl text-caption font-bold transition-all inline-flex items-center gap-2 shadow-2xs cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                <span>Descargar Detalle Tarifario (Excel)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleGenerarProformaV2Pricing}
+                className="px-6 py-3 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white rounded-xl text-caption font-extrabold shadow-md shadow-purple-700/25 transition-all cursor-pointer inline-flex items-center gap-2 active:scale-95"
+              >
+                <Send className="w-4 h-4" />
+                <span>Generar y Solicitar Autorización Jefatura (V2) ➔</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* ══════════════════════════════════════════════════════════════════════
+            VISTA 2: FLUJO DE REGULARIZACIÓN POR MEDICIONES / CUBITAJE (SKU)
+           ══════════════════════════════════════════════════════════════════════ */
+        <div className="space-y-6 animate-in fade-in duration-200">
+          {/* Encabezado Principal con Botón de Descarga */}
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-purple-900/10 dark:border-white/10 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-mono font-extrabold text-micro bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300 px-2.5 py-0.5 rounded-md">
+                  {proformaId}
+                </span>
+                <span className="text-micro font-bold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/15 px-2 py-0.5 rounded-md">
+                  Rechazada por Medidas/Cubitaje (v1)
+                </span>
+              </div>
+              <h1 className="text-h1 font-bold text-gray-900 dark:text-gray-100">
+                Actualizar y Regularizar Proforma por SKU
+              </h1>
+              <p className="text-caption text-gray-600 dark:text-gray-400 mt-1">
+                Descarga la planilla base, ajusta las mediciones y procesa el cruce automatizado contra el maestro y agente IA.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleDownloadPlantilla}
+                className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-purple-200 dark:border-white/10 hover:bg-purple-50 dark:hover:bg-purple-500/10 text-purple-700 dark:text-purple-300 rounded-xl text-caption font-bold transition-all inline-flex items-center gap-2 shadow-2xs cursor-pointer hover:scale-105 active:scale-95"
+              >
+                <Download className="w-4 h-4" />
+                <span>Descargar Planilla Base</span>
+              </button>
+            </div>
+          </div>
 
       {/* Grid en 2 Columnas: Detalle de Proforma Actual (Izquierda) + Carga de Planilla (Derecha) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1176,6 +1575,8 @@ function EditarProformaContent() {
         </div>
       </div>
       )}
+    </div>
+  )}
 
       {/* ─── MODAL 1: REVISAR / MODIFICAR SUGERENCIA IA (TIER 2) ─── */}
       {editingIaItem && (
