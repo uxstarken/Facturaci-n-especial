@@ -62,10 +62,13 @@ export function RespuestaClienteModal({
     motivoRechazoSelect.toLowerCase().includes('precio') ||
     motivoRechazoSelect.toLowerCase().includes('descuentos');
 
-  const esTercerRechazo =
-    tipoRespuesta === 'Rechazada' &&
-    !esPorPrecio &&
-    (conteoActual >= 2 || proforma.versionActual === 'v3');
+  // Si la proforma ya está en V3 (por versión actual, conteo o historial), este rechazo es terminal -> deriva a KAM
+  const esV3 =
+    proforma.versionActual === 'v3' ||
+    conteoActual >= 2 ||
+    (proforma.historialVersiones && proforma.historialVersiones.length >= 3);
+
+  const esRechazoEnV3 = tipoRespuesta === 'Rechazada' && esV3;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -106,10 +109,17 @@ export function RespuestaClienteModal({
 
     if (tipoRespuesta === 'Rechazada') {
       nuevoConteo = conteoActual + 1;
-      if (esPorPrecio) {
+      const esV3Actual =
+        proforma.versionActual === 'v3' ||
+        conteoActual >= 2 ||
+        (proforma.historialVersiones && proforma.historialVersiones.length >= 3);
+
+      if (esV3Actual) {
+        // En V3, sea rechazada por medidas, precio u otro motivo, se deriva SIEMPRE automáticamente a KAM
+        nuevoEstado = 'Derivada a KAM';
+      } else if (esPorPrecio) {
+        // En V1 o V2, si es por precio va al flujo de Pricing
         nuevoEstado = 'Enviado a Pricing';
-      } else if (nuevoConteo >= 3 || proforma.versionActual === 'v3') {
-        nuevoEstado = 'Derivada a CAM';
       } else if (nuevoConteo === 2 || proforma.versionActual === 'v2') {
         nuevoEstado = 'Rechazada v2';
       } else {
@@ -117,46 +127,80 @@ export function RespuestaClienteModal({
       }
     }
 
-    const versionNombre = `v${(proforma.historialVersiones?.length || 0) + 1}` as 'v1' | 'v2' | 'v3';
+    // Historial de versiones existente o inicial
+    const baseHist =
+      proforma.historialVersiones && proforma.historialVersiones.length > 0
+        ? proforma.historialVersiones
+        : [
+            {
+              version: 'v1' as const,
+              fechaCreacion: proforma.fecha || fechaActualFormateada,
+              monto: proforma.monto,
+            },
+          ];
 
-    const nuevaIteracion = {
-      version: versionNombre,
-      fechaCreacion: proforma.fecha || fechaActualFormateada,
-      fechaAprobacion: tipoRespuesta === 'Aprobada' ? fechaActualFormateada : undefined,
-      fechaRechazo: tipoRespuesta === 'Rechazada' ? fechaActualFormateada : undefined,
-      motivo: tipoRespuesta === 'Rechazada' ? motivoRechazoSelect : undefined,
-      monto: proforma.monto,
-      respaldoCorreoUrl: previewUrl || '/demo_email_aprobado.png',
-    };
+    // Actualizar la versión actual (tope estricto a V3, NUNCA crear V4)
+    const histSanitizado = baseHist.slice(0, 3).map((item, idx, arr) => {
+      if (idx === arr.length - 1) {
+        return {
+          ...item,
+          fechaAprobacion: tipoRespuesta === 'Aprobada' ? fechaActualFormateada : undefined,
+          fechaRechazo: tipoRespuesta === 'Rechazada' ? fechaActualFormateada : undefined,
+          motivo: tipoRespuesta === 'Rechazada' ? motivoRechazoSelect : undefined,
+          respaldoCorreoUrl:
+            previewUrl ||
+            (tipoRespuesta === 'Aprobada'
+              ? '/demo_email_aprobado.png'
+              : '/demo_email_rechazado.png'),
+          estado: tipoRespuesta === 'Aprobada' ? 'Aprobada' : 'Rechazada',
+        };
+      }
+      return item;
+    });
+
+    const versionTope = (histSanitizado[histSanitizado.length - 1]?.version || 'v1') as 'v1' | 'v2' | 'v3';
 
     const proformaActualizada: Proforma = {
       ...proforma,
       estado: nuevoEstado,
+      estadoComercial:
+        nuevoEstado === 'Derivada a KAM'
+          ? 'Derivada_KAM'
+          : tipoRespuesta === 'Aprobada'
+          ? 'Aprobada_Cliente'
+          : 'Rechazada_Cliente',
+      versionActual: versionTope,
       conteoRechazos: nuevoConteo,
       respaldoCorreo: archivoRespaldo ? archivoRespaldo.name : 'correo_respaldo_cliente.png',
-      historialVersiones: [...(proforma.historialVersiones || []), nuevaIteracion],
+      historialVersiones: histSanitizado,
     };
 
-    // Si es por Medidas o por Pricing, abrimos el popup de aviso dedicado
-    if (tipoRespuesta === 'Rechazada' && esPorMedidas && nuevoEstado !== 'Derivada a CAM') {
+    // Si fue Derivada a KAM (V3 rechazada por medidas, precio o cualquier motivo), se deriva directamente sin popups de edición
+    if (nuevoEstado === 'Derivada a KAM') {
+      showToast(
+        `Proforma ${proforma.id} (Versión V3 rechazada por ${esPorPrecio ? 'precio' : esPorMedidas ? 'medidas' : 'cliente'}) fue derivada automáticamente a KAM.`,
+        'warning',
+        7000,
+        'Derivada a KAM'
+      );
+      onSuccess(proformaActualizada);
+      return;
+    }
+
+    // Si es por Medidas (en V1 o V2), abrimos el popup de aviso dedicado
+    if (tipoRespuesta === 'Rechazada' && esPorMedidas) {
       setPopupAviso({ tipo: 'medidas', proforma: proformaActualizada });
       return;
     }
 
+    // Si es por Precio (en V1 o V2), abrimos el popup de aviso dedicado
     if (tipoRespuesta === 'Rechazada' && esPorPrecio) {
       setPopupAviso({ tipo: 'pricing', proforma: proformaActualizada });
       return;
     }
 
     // Otros casos: Notificar y cerrar
-    if (nuevoEstado === 'Derivada a CAM') {
-      showToast(
-        `Proforma ${proforma.id} (Versión V3) fue rechazada por el cliente y derivada automáticamente al CAM.`,
-        'warning',
-        7000,
-        'Derivada a CAM'
-      );
-    } else if (tipoRespuesta === 'Aprobada') {
+    if (tipoRespuesta === 'Aprobada') {
       showToast(
         `Respuesta registrada: Proforma ${proforma.id} Aprobada por el cliente.`,
         'success',
@@ -313,14 +357,14 @@ export function RespuestaClienteModal({
                   )}
                 </div>
 
-                {/* Advertencia si es 3er Rechazo (V3 Rechazada -> CAM) */}
-                {esTercerRechazo && (
+                {/* Advertencia si es Rechazo en V3 (por medidas o precio -> KAM automático) */}
+                {esRechazoEnV3 && (
                   <div className="p-3.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 rounded-xl text-caption text-amber-900 dark:text-amber-300 flex items-start gap-2.5 animate-in fade-in duration-200">
                     <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                     <div>
                       <strong className="block font-bold">Límite de iteraciones alcanzado (Versión V3)</strong>
                       <p className="mt-0.5 leading-relaxed text-micro text-amber-800 dark:text-amber-300">
-                        Al rechazar la versión V3, la proforma será derivada automáticamente a la <strong>Subgerencia / Ejecutivo CAM</strong> para resolución directa y se cerrará el ciclo de iteraciones.
+                        Al rechazar la versión V3 (ya sea por medidas, tarifas o discrepancia comercial), la proforma será derivada automáticamente a la <strong>Subgerencia / Ejecutivo KAM</strong> para resolución directa. No se generará una versión V4.
                       </p>
                     </div>
                   </div>

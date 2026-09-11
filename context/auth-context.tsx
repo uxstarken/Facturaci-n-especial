@@ -1,13 +1,13 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User } from '@/lib/types';
+import { User, Role } from '@/lib/types';
 import { MOCK_USERS } from '@/lib/mock-data';
 
 interface AuthContextType {
   user: User | null;
   pendingUser: User | null;
-  login: (email: string, pass: string) => { success: boolean; requires2FA?: boolean; message?: string };
+  login: (email: string, pass: string, roleOverride?: Role) => { success: boolean; requires2FA?: boolean; message?: string };
   verify2FA: (code: string) => boolean;
   logout: () => void;
   setPendingUser: (user: User | null) => void;
@@ -40,37 +40,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const login = (email: string, pass: string) => {
+  const login = (email: string, pass: string, roleOverride?: Role) => {
     localStorage.removeItem('starken_fe_logged_out');
     
-    // Si coincide con alguno de los usuarios mock predefinidos, tomar sus datos
-    const found = MOCK_USERS.find(
-      (u) => u.email.toLowerCase() === email.trim().toLowerCase()
-    );
+    const cleanEmail = email.trim().toLowerCase();
+    
+    // Regla inteligente:
+    // Si contiene "jefe" o "jefatura" -> Jefatura (Carlos Muñoz)
+    // De lo contrario -> Analista (Ana Valenzuela)
+    const isJefe = cleanEmail.includes('jefe') || cleanEmail.includes('jefatura');
+    const assignedRole: Role = roleOverride || (isJefe ? 'Jefatura' : 'Analista');
 
-    let loggedInUser: User;
-    if (found) {
-      const { password, ...userWithoutPass } = found;
-      loggedInUser = userWithoutPass;
-    } else {
-      // Si ingresa cualquier otro correo, crear usuario dinámico
-      const cleanEmail = email.trim() || 'usuario@starken.cl';
-      const namePart = cleanEmail.split('@')[0].replace(/[._-]/g, ' ');
-      const formattedName = namePart
-        .split(' ')
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(' ');
+    const assignedName = assignedRole === 'Jefatura' ? 'Carlos Muñoz' : 'Ana Valenzuela';
+    const assignedEmail = cleanEmail || (assignedRole === 'Jefatura' ? 'jefe@starken.cl' : 'analista@starken.cl');
 
-      loggedInUser = {
-        id: `u-${Date.now()}`,
-        name: formattedName || 'Usuario Starken',
-        email: cleanEmail,
-        role: 'Analista',
-        requires2FA: false,
-      };
-    }
+    const loggedInUser: User = {
+      id: assignedRole === 'Jefatura' ? '2' : '1',
+      name: assignedName,
+      email: assignedEmail,
+      role: assignedRole,
+      requires2FA: false, // Ingreso directo con cualquier contraseña
+    };
 
-    // Permitir acceso directo para cualquier correo y contraseña
     setUser(loggedInUser);
     localStorage.setItem('starken_fe_user', JSON.stringify(loggedInUser));
     return { success: true, requires2FA: false };

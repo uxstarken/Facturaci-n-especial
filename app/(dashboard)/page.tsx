@@ -23,6 +23,7 @@ import {
   Tag,
   Receipt,
   Zap,
+  CheckSquare,
 } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { useTheme } from '@/context/theme-context';
@@ -153,9 +154,9 @@ function DashboardHomeContent() {
         setProformas((prev) =>
           prev.map((p) => {
             if (p.id === highlightParam) {
-              const prevHist = p.historialVersiones || [];
-              const nextVerNum = prevHist.length + 1;
-              const nextVer = (nextVerNum === 2 ? 'v2' : nextVerNum >= 3 ? 'v3' : 'v2') as VersionProforma;
+              const prevHist = (p.historialVersiones || []).slice(0, 2);
+              const nextVerNum = Math.min(prevHist.length + 1, 3);
+              const nextVer = (nextVerNum === 2 ? 'v2' : 'v3') as VersionProforma;
 
               const yaTieneVer = prevHist.some((h) => h.version === nextVer);
               // Si se avanza a una versión superior (ej: V2 -> V3), todas las versiones previas necesariamente fueron rechazadas
@@ -182,7 +183,7 @@ function DashboardHomeContent() {
                       estado: 'Pendiente de validación',
                       estadoSupervision: 'Pendiente_Autorizacion' as const,
                     },
-                  ];
+                  ].slice(0, 3);
 
               return {
                 ...p,
@@ -346,7 +347,7 @@ function DashboardHomeContent() {
           <p className="text-caption text-gray-600 dark:text-gray-400 font-medium">Aprobadas por clientes</p>
         </div>
 
-        {/* KPI 4: CAM / Rechazadas */}
+        {/* KPI 4: KAM / Rechazadas */}
         <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-purple-900/10 dark:border-white/10 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
           <div className="flex items-center justify-between mb-3">
             <div className="w-10 h-10 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
@@ -357,9 +358,9 @@ function DashboardHomeContent() {
             </span>
           </div>
           <p className="text-3xl font-extrabold text-rose-600 dark:text-rose-400 leading-none mb-1">
-            {proformas.filter((p) => p.estado === 'Derivada a CAM' || (p.conteoRechazos || 0) >= 3).length}
+            {proformas.filter((p) => p.estado === 'Derivada a KAM' || p.estado === 'Derivada a CAM' || p.estadoComercial === 'Derivada_KAM' || (p.conteoRechazos || 0) >= 3).length}
           </p>
-          <p className="text-caption text-gray-600 dark:text-gray-400 font-medium">Derivadas al CAM (3 rechazos / V3)</p>
+          <p className="text-caption text-gray-600 dark:text-gray-400 font-medium">Derivadas al KAM (3 rechazos / V3)</p>
         </div>
       </div>
 
@@ -387,13 +388,23 @@ function DashboardHomeContent() {
               />
             </div>
 
-            <Link
-              href="/proformas/nueva"
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r ${theme.buttonGradient} text-white rounded-lg text-caption font-semibold shadow-sm transition-all`}
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Nueva Proforma
-            </Link>
+            {user?.role === 'Jefatura' ? (
+              <Link
+                href="/aprobaciones"
+                className={`inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r ${theme.buttonGradient} text-white rounded-lg text-caption font-semibold shadow-sm transition-all`}
+              >
+                <CheckSquare className="w-3.5 h-3.5" />
+                Aprobaciones pendientes (4)
+              </Link>
+            ) : (
+              <Link
+                href="/proformas/nueva"
+                className={`inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r ${theme.buttonGradient} text-white rounded-lg text-caption font-semibold shadow-sm transition-all`}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Nueva Proforma
+              </Link>
+            )}
           </div>
         </div>
 
@@ -415,26 +426,34 @@ function DashboardHomeContent() {
                 const esFacturado = p.estado === 'Facturado';
                 const esEnviadoPricing = p.estado === 'Enviado a Pricing';
                 const esPricingResuelto = p.estado === 'Tarifas Corregidas por Pricing' || p.estadoSupervision === 'Pricing_Resuelto';
-                const esDerivadaCAM = p.estado === 'Derivada a CAM' || (p.conteoRechazos || 0) >= 3;
+                const esDerivadaKAM =
+                  p.estado === 'Derivada a KAM' ||
+                  p.estado === 'Derivada a CAM' ||
+                  p.estadoComercial === 'Derivada_KAM' ||
+                  (p.conteoRechazos || 0) >= 3;
                 const esAprobada = p.estado === 'Aprobada por Cliente' || p.estado === 'Aprobada';
-                const editarBloqueado = esDerivadaCAM || esAprobada || esEnviadoPricing || esFacturado;
+                const editarBloqueado = esDerivadaKAM || esAprobada || esEnviadoPricing || esFacturado;
                 const isExpanded = expandedProformaId === p.id;
                 const isStatusMenuOpen = openStatusDropdownId === p.id;
 
-                const versionesLista =
+                const rawVersiones =
                   p.historialVersiones && p.historialVersiones.length > 0
                     ? p.historialVersiones
                     : [{ version: 'v1' as const, fechaCreacion: p.fecha, monto: p.monto }];
 
-                const currentVersion =
-                  versionesLista[versionesLista.length - 1]?.version.toUpperCase() ||
-                  p.versionActual?.toUpperCase() ||
-                  'V1';
+                // Regla estricta: Jamás debe aparecer una V4. Máximo hasta V3.
+                const versionesLista = rawVersiones.slice(0, 3);
+
+                const currentVersion = esDerivadaKAM
+                  ? 'V3'
+                  : (versionesLista[versionesLista.length - 1]?.version.toUpperCase() ||
+                     p.versionActual?.toUpperCase() ||
+                     'V1');
 
                 const estadoTexto = esFacturado
                   ? 'Facturado'
-                  : esDerivadaCAM
-                  ? 'Derivada a CAM'
+                  : esDerivadaKAM
+                  ? 'Derivada a KAM'
                   : esAprobada
                   ? 'Aprobada por Cliente'
                   : esEnviadoPricing
@@ -586,10 +605,10 @@ function DashboardHomeContent() {
                                   <button
                                     type="button"
                                     onClick={(e) => {
-                                      if (esFacturado || esDerivadaCAM || esEnviadoPricing) {
+                                      if (esFacturado || esDerivadaKAM || esEnviadoPricing) {
                                         showToast(
-                                          esDerivadaCAM
-                                            ? 'Esta proforma fue derivada al CAM (Gestión bloqueada).'
+                                          esDerivadaKAM
+                                            ? 'Esta proforma fue derivada al KAM (Gestión bloqueada).'
                                             : esFacturado
                                             ? 'Esta proforma ya fue facturada y finalizada.'
                                             : 'Esta proforma está en revisión de Pricing (Gestión bloqueada).',
@@ -618,8 +637,8 @@ function DashboardHomeContent() {
                                     title={
                                       esFacturado
                                         ? 'Facturada (Ciclo finalizado)'
-                                        : esDerivadaCAM
-                                        ? 'Derivada a CAM'
+                                        : esDerivadaKAM
+                                        ? 'Derivada a KAM'
                                         : esEnviadoPricing
                                         ? 'Enviada a Pricing'
                                         : esAprobada
@@ -629,7 +648,7 @@ function DashboardHomeContent() {
                                     className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-micro font-extrabold transition-all cursor-pointer hover:shadow-xs active:scale-95 ${
                                       esAprobada
                                         ? 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-300'
-                                        : esDerivadaCAM
+                                        : esDerivadaKAM
                                         ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-400'
                                         : esEnviadoPricing
                                         ? 'bg-blue-50 hover:bg-blue-100 dark:bg-blue-500/15 text-blue-800 dark:text-blue-300 border border-blue-300'
@@ -642,7 +661,7 @@ function DashboardHomeContent() {
                                   >
                                     {esAprobada && <Check className="w-3 h-3 text-emerald-600" />}
                                     <span>{estadoTexto}</span>
-                                    {!(esFacturado || esDerivadaCAM || esEnviadoPricing) && (
+                                    {!(esFacturado || esDerivadaKAM || esEnviadoPricing) && (
                                       <ChevronDown
                                         className={`w-3 h-3 opacity-80 transition-transform duration-200 ${
                                           isStatusMenuOpen ? 'rotate-180' : ''
@@ -672,8 +691,8 @@ function DashboardHomeContent() {
                                   ? 'Proforma facturada y finalizada (Ciclo completado)'
                                   : esAprobada
                                   ? 'Proforma aprobada por cliente (Edición bloqueada)'
-                                  : esDerivadaCAM
-                                  ? 'Derivada a CAM (Edición bloqueada)'
+                                  : esDerivadaKAM
+                                  ? 'Derivada a KAM (Edición bloqueada)'
                                   : esEnviadoPricing
                                   ? 'Enviada a Pricing (Edición bloqueada hasta resolución)'
                                   : 'Edición bloqueada'
@@ -755,11 +774,11 @@ function DashboardHomeContent() {
                             </div>
 
                             {/* Alerta de derivación si aplica */}
-                            {esDerivadaCAM && (
+                            {esDerivadaKAM && (
                               <div className="p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 rounded-xl flex items-center gap-3">
                                 <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0" />
                                 <p className="text-caption text-amber-900 dark:text-amber-200">
-                                  <strong>Límite de 2 rechazos alcanzado:</strong> Esta proforma ha pasado al flujo de resolución CAM.
+                                  <strong>Límite de rechazos alcanzado (Versión V3):</strong> Esta proforma ha pasado al flujo de resolución KAM.
                                 </p>
                               </div>
                             )}
@@ -798,6 +817,8 @@ function DashboardHomeContent() {
                                                 className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-[11px] font-extrabold shrink-0 shadow-xs ${
                                                   esAprob
                                                     ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-400'
+                                                    : (esDerivadaKAM && esUltima) || hist.estado === 'Derivada a KAM' || hist.estado === 'Derivada a CAM'
+                                                    ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-400'
                                                     : esRech
                                                     ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-400'
                                                     : 'bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-400'
@@ -811,7 +832,7 @@ function DashboardHomeContent() {
                                                 </span>
                                                 {esUltima && (
                                                   <span className="text-[10px] font-extrabold text-purple-700 dark:text-purple-300">
-                                                    ★ Versión Vigente
+                                                    ★ Versión Vigente{esDerivadaKAM ? ' (Derivada a KAM)' : ''}
                                                   </span>
                                                 )}
                                               </div>
@@ -821,12 +842,20 @@ function DashboardHomeContent() {
                                               className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold shrink-0 ${
                                                 esAprob
                                                   ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200'
+                                                  : (esDerivadaKAM && esUltima) || hist.estado === 'Derivada a KAM' || hist.estado === 'Derivada a CAM'
+                                                  ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200'
                                                   : esRech
                                                   ? 'bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-200'
                                                   : 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200'
                                               }`}
                                             >
-                                              {esAprob ? 'Aprobada' : esRech ? 'Rechazada' : hist.estado || 'Pendiente de validación'}
+                                              {esAprob
+                                                ? 'Aprobada'
+                                                : (esDerivadaKAM && esUltima) || hist.estado === 'Derivada a KAM' || hist.estado === 'Derivada a CAM'
+                                                ? 'Derivada a KAM'
+                                                : esRech
+                                                ? 'Rechazada'
+                                                : hist.estado || 'Pendiente de validación'}
                                             </span>
                                           </div>
 

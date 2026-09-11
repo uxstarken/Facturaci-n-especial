@@ -18,6 +18,7 @@ export type ProformaEstado =
   | 'Facturado'
   | 'Rechazada v1'
   | 'Rechazada v2'
+  | 'Derivada a KAM'
   | 'Derivada a CAM'
   | 'Enviado a Pricing'
   | 'Tarifas Corregidas por Pricing';
@@ -36,6 +37,7 @@ export type EstadoComercial =
   | 'Enviada_Cliente'
   | 'Aprobada_Cliente'
   | 'Rechazada_Cliente'
+  | 'Derivada_KAM'
   | 'Derivada_CAM'
   | 'Facturado';
 

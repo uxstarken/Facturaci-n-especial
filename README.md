@@ -8,8 +8,8 @@ Plataforma integral desarrollada en Next.js (App Router), TypeScript y Tailwind 
 
 1. **Gestión de Proformas y Estados:**
    * Aprobación / Rechazo con respaldo de correos y evidencia adjunta.
-   * Flujo de estados: `Aprobada`, `Rechazada v1`, `Rechazada v2`, `Derivada a CAM`, `Enviado a Pricing` y `Pendiente de validación`.
-   * Bloqueo inteligente tras 2 rechazos con derivación a Centro de Atención al Mayor (CAM).
+   * Flujo de estados: `Aprobada`, `Rechazada v1`, `Rechazada v2`, `Derivada a KAM`, `Enviado a Pricing` y `Pendiente de validación`.
+   * Bloqueo inteligente al alcanzar rechazos en Versión V3 con derivación directa al Ejecutivo KAM (Key Account Manager), sin generar nunca una V4.
 
 2. **Línea de Tiempo y Trazabilidad Multi-Versión:**
    * Acordeón horizontal interactivo (`V1`, `V2`, `V3`) con desglose de montos netos, fechas, motivos de discrepancia y descarga de documentos emitidos.

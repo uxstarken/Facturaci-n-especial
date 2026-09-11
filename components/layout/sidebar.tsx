@@ -18,13 +18,23 @@ export function Sidebar() {
     router.push('/login');
   };
 
-  const navItems = [
-    { label: 'Home', href: '/', icon: LayoutDashboard },
-    { label: 'Crear Proforma', href: '/proformas/nueva', icon: FilePlus2 },
-    { label: 'Aprobaciones', href: '/aprobaciones', icon: CheckSquare, badge: '4' },
-    { label: 'Auditorías', href: '/auditoria', icon: ShieldAlert, badge: user?.role !== 'Analista' ? '3' : undefined },
-    { label: 'Mi perfil y temas', href: '/perfil', icon: User },
-  ];
+  const isJefatura = user?.role === 'Jefatura';
+
+  // Bifurcación estricta de navegación según requerimiento:
+  // - Analista: Home, Crear Proforma, Mi perfil y temas
+  // - Jefe: Home, Aprobaciones, Auditorías, Mi perfil y temas
+  const navItems = isJefatura
+    ? [
+        { label: 'Home', href: '/', icon: LayoutDashboard },
+        { label: 'Aprobaciones', href: '/aprobaciones', icon: CheckSquare, badge: '4' },
+        { label: 'Auditorías', href: '/auditoria', icon: ShieldAlert, badge: '3' },
+        { label: 'Mi perfil y temas', href: '/perfil', icon: User },
+      ]
+    : [
+        { label: 'Home', href: '/', icon: LayoutDashboard },
+        { label: 'Crear Proforma', href: '/proformas/nueva', icon: FilePlus2 },
+        { label: 'Mi perfil y temas', href: '/perfil', icon: User },
+      ];
 
   return (
     <aside className={`w-[230px] h-screen bg-gradient-to-b ${theme.sidebarBgGradient} border-r border-purple-900/15 dark:border-white/5 flex flex-col fixed top-0 left-0 z-50 shadow-[4px_0_24px_rgba(0,0,0,0.06)] overflow-hidden`}>
@@ -59,9 +69,16 @@ export function Sidebar() {
 
       {/* Nav Menu */}
       <nav className="flex-1 p-3 flex flex-col gap-1 relative z-10">
-        <span className="text-micro font-semibold text-gray-600 dark:text-gray-500 uppercase tracking-wider px-2.5 pt-2 pb-1">
-          Principal
-        </span>
+        <div className="flex items-center justify-between px-2.5 pt-2 pb-1">
+          <span className="text-micro font-semibold text-gray-600 dark:text-gray-500 uppercase tracking-wider">
+            Menú {isJefatura ? 'Jefatura' : 'Analista'}
+          </span>
+          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+            isJefatura ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300' : 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300'
+          }`}>
+            {isJefatura ? 'Jefe' : 'Analista'}
+          </span>
+        </div>
 
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -95,11 +112,13 @@ export function Sidebar() {
       <div className="p-3 border-t border-purple-900/10 dark:border-white/5 relative z-10 bg-white/30 dark:bg-black/20 backdrop-blur-sm">
         <div className="flex items-center gap-2.5 p-2 rounded-lg bg-white/80 dark:bg-slate-800/60 border border-purple-200/60 dark:border-white/10 shadow-xs">
           <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${theme.accentGradient} flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-xs`}>
-            {user ? getInitials(user.name) : 'AN'}
+            {user ? getInitials(user.name) : (isJefatura ? 'JF' : 'AN')}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">{user?.name || 'Analista'}</p>
-            <p className="text-micro text-gray-600 dark:text-gray-400 truncate">{user?.role || 'analista@starken.cl'}</p>
+            <p className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">{user?.name || (isJefatura ? 'Jefe' : 'Analista')}</p>
+            <p className="text-micro text-gray-600 dark:text-gray-400 truncate">
+              {isJefatura ? 'Jefatura de Facturación' : 'Analista de Facturación'}
+            </p>
           </div>
           <button
             onClick={handleLogout}

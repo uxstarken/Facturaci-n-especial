@@ -40,10 +40,162 @@
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(124, 58, 237, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(124, 58, 237, 0.06) 1px, transparent 1px);
+    linear-gradient(rgba(124, 58, 237, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 58, 237, 0.08) 1px, transparent 1px);
   background-size: 48px 48px;
   pointer-events: none;
+  z-index: 1;
+}
+
+.dark .login-bg-grid,
+[data-theme="dark"] .login-bg-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+}
+
+[data-theme="mocha"] .login-bg-grid {
+  background-image:
+    linear-gradient(rgba(124, 58, 237, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 58, 237, 0.08) 1px, transparent 1px);
+}
+
+/* ==========================================================================
+   PANTALLA DE LOGIN: Identidad Morado Starken exacta del prototipo
+   ========================================================================== */
+.login-screen {
+  background: linear-gradient(145deg, #EDE9FE 0%, #F3F4F8 50%, #E0E7FF 100%) !important;
+}
+
+.login-screen .login-card-exact {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 440px;
+  background: rgba(255, 255, 255, 0.84) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1px solid rgba(124, 58, 237, 0.14) !important;
+  border-radius: 24px !important;
+  padding: 44px 40px 40px !important;
+  box-shadow: 0 10px 40px rgba(124, 58, 237, 0.12), 0 1px 0 rgba(255, 255, 255, 0.95) inset !important;
+}
+
+.login-screen .login-card-exact::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20%;
+  right: 20%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(124, 58, 237, 0.35), transparent);
+  border-radius: 50%;
+}
+
+.login-screen .login-brand-sk {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%) !important;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 18px;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.25) !important;
+  flex-shrink: 0;
+}
+
+.login-screen .login-sub-brand {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: #7C3AED !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1.5px !important;
+  line-height: 1 !important;
+}
+
+.login-screen .login-headline-exact {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  letter-spacing: -0.4px !important;
+  margin-top: 24px !important;
+  margin-bottom: 6px !important;
+  line-height: 1.25 !important;
+}
+
+.login-screen .login-subline-exact {
+  font-size: 13px !important;
+  color: #6B7280 !important;
+  line-height: 1.5 !important;
+  margin-bottom: 28px !important;
+}
+
+.login-screen .login-label-exact {
+  display: block !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.8px !important;
+  margin-bottom: 8px !important;
+}
+
+.login-screen .login-input-exact {
+  width: 100% !important;
+  height: 46px !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+  border: 1.5px solid rgba(124, 58, 237, 0.16) !important;
+  border-radius: 12px !important;
+  color: #111827 !important;
+  font-size: 14px !important;
+  padding-left: 42px !important;
+  padding-right: 16px !important;
+  outline: none !important;
+  transition: all 0.2s ease !important;
+}
+.login-screen .login-input-exact:focus {
+  background: #FFFFFF !important;
+  border-color: #7C3AED !important;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15) !important;
+}
+
+.login-screen .login-btn-primary {
+  width: 100% !important;
+  height: 48px !important;
+  background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%) !important;
+  color: #FFFFFF !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  border-radius: 12px !important;
+  letter-spacing: 0.3px !important;
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.25) !important;
+  transition: all 0.22s ease !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-top: 24px !important;
+}
+.login-screen .login-btn-primary:hover {
+  background: linear-gradient(135deg, #6D28D9 0%, #5B21B6 100%) !important;
+  box-shadow: 0 6px 24px rgba(124, 58, 237, 0.35) !important;
+  transform: translateY(-1px) !important;
+}
+.login-screen .login-btn-primary:active {
+  transform: translateY(0) !important;
+}
+
+.login-screen .login-link-purple {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #7C3AED !important;
+}
+.login-screen .login-link-purple:hover {
+  color: #6D28D9 !important;
+  text-decoration: underline !important;
 }
 
 @keyframes toast-in {

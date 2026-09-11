@@ -27,15 +27,20 @@ interface TrazabilidadModalProps {
 export function TrazabilidadModal({ proforma, onClose }: TrazabilidadModalProps) {
   const { showToast } = useToast();
 
-  const historial = proforma.historialVersiones || [
-    {
-      version: 'v1' as const,
-      fechaCreacion: proforma.fecha,
-      monto: proforma.monto,
-    },
-  ];
+  const historial = (
+    proforma.historialVersiones || [
+      {
+        version: 'v1' as const,
+        fechaCreacion: proforma.fecha,
+        monto: proforma.monto,
+      },
+    ]
+  ).slice(0, 3);
 
-  const esDerivadaCAM = proforma.estado === 'Derivada a CAM' || (proforma.conteoRechazos || 0) >= 3;
+  const esDerivadaKAM =
+    proforma.estado === 'Derivada a KAM' ||
+    proforma.estado === 'Derivada a CAM' ||
+    (proforma.conteoRechazos || 0) >= 3;
   const esFacturado = proforma.estado === 'Facturado' || !!proforma.numeroFactura;
 
   const handleDescargarFactura = () => {
@@ -98,40 +103,33 @@ export function TrazabilidadModal({ proforma, onClose }: TrazabilidadModalProps)
         {/* Header */}
         <div className="border-b border-gray-100 dark:border-white/10 pb-3 pr-6">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-micro font-extrabold uppercase tracking-wider text-purple-700 dark:text-purple-400">
-              Historial de iteraciones y auditoría
+            <span className="font-mono font-bold text-micro bg-purple-100 dark:bg-purple-900/40 text-purple-900 dark:text-purple-300 px-2 py-0.5 rounded">
+              {proforma.id}
             </span>
-            <span
-              className={`text-micro font-bold px-2 py-0.5 rounded-full border ${
-                esFacturado
-                  ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-300'
-                  : esDerivadaCAM
-                  ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-300'
-                  : proforma.estado === 'Aprobada por Cliente'
-                  ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-300'
-                  : 'bg-purple-50 dark:bg-purple-500/15 text-purple-800 dark:text-purple-300 border-purple-300'
-              }`}
-            >
-              {proforma.estado}
+            <span className="text-micro text-gray-500 dark:text-gray-400 font-medium">
+              RUT: {proforma.rut}
             </span>
           </div>
-          <h3 className="text-title-2 font-extrabold text-gray-900 dark:text-gray-100">
-            Trazabilidad de proforma: {proforma.id}
+          <h3 className="text-h2 font-semibold text-gray-900 dark:text-gray-100">
+            Trazabilidad Comercial y Versiones
           </h3>
-          <p className="text-caption text-gray-500 font-medium">
-            Cliente: <strong className="text-gray-800 dark:text-gray-200">{proforma.cliente}</strong> · RUT: {proforma.rut}
+          <p className="text-caption text-gray-500 dark:text-gray-400">
+            Cliente: <span className="font-semibold text-gray-800 dark:text-gray-200">{proforma.cliente}</span> · Monto Total:{' '}
+            <span className="font-mono font-bold text-purple-900 dark:text-purple-300">
+              {proforma.montoFormatted || formatCurrency(proforma.monto)}
+            </span>
           </p>
         </div>
 
-        {/* Banner Especial si fue Derivada a CAM */}
-        {esDerivadaCAM && (
+        {/* Banner Especial si fue Derivada a KAM */}
+        {esDerivadaKAM && (
           <div className="p-4 bg-amber-500/10 dark:bg-amber-500/15 border border-amber-400 dark:border-amber-500/30 rounded-xl space-y-1.5 animate-in fade-in duration-200">
             <div className="flex items-center gap-2 text-amber-900 dark:text-amber-300 font-extrabold text-caption">
               <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0" />
-              <span>PROFORMA DERIVADA AUTOMÁTICAMENTE A CAM (2 RECHAZOS ALCANZADOS)</span>
+              <span>PROFORMA DERIVADA AUTOMÁTICAMENTE A KAM (RESOLUCIÓN COMERCIAL)</span>
             </div>
             <p className="text-body text-gray-700 dark:text-gray-300 leading-relaxed pl-7">
-              Esta proforma acumuló 2 rechazos consecutivos por parte del cliente. Conforme a las normas de gobernanza de Facturación Especial, la emisión de una <strong>Proforma v3 estándar está bloqueada</strong> y la gestión comercial fue traspasada directamente a la <strong>Subgerencia / Ejecutivo CAM</strong>.
+              Esta proforma alcanzó el límite máximo de iteraciones (Versión V3). Conforme a las normas de gobernanza de Facturación Especial, no se emitirán versiones adicionales (máximo V3) y la gestión ha sido traspasada formalmente a la <strong>Subgerencia / Ejecutivo KAM</strong>.
             </p>
           </div>
         )}
