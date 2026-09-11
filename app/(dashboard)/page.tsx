@@ -24,6 +24,7 @@ import {
   Receipt,
   Zap,
   CheckSquare,
+  RotateCcw,
 } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { useTheme } from '@/context/theme-context';
@@ -34,6 +35,8 @@ import { formatCurrency } from '@/lib/utils';
 import { RespuestaClienteModal } from '@/components/proformas/RespuestaClienteModal';
 import { RegistrarFacturaModal } from '@/components/proformas/RegistrarFacturaModal';
 
+type KpiFilterType = 'todos' | 'pendientes' | 'rechazadas' | 'pricing' | 'aprobadas' | 'kam';
+
 function DashboardHomeContent() {
   const { user } = useAuth();
   const { theme } = useTheme();
@@ -43,7 +46,7 @@ function DashboardHomeContent() {
   const [proformas, setProformas] = useState<Proforma[]>(MOCK_PROFORMAS);
   const [searchTerm, setSearchTerm] = useState('');
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
-  const [kpiFilter, setKpiFilter] = useState<'todos' | 'pendientes' | 'aprobadas' | 'kam'>('todos');
+  const [kpiFilter, setKpiFilter] = useState<KpiFilterType>('todos');
 
   // Dropdown de cambio de estado en el badge — posicionado con fixed para escapar del overflow
   const [openStatusDropdownId, setOpenStatusDropdownId] = useState<string | null>(null);
@@ -247,12 +250,32 @@ function DashboardHomeContent() {
     };
   }, [openStatusDropdownId]);
 
-  // Conteo de KPIs sincronizado con los filtros
+  // Conteo de KPIs sincronizado con los 6 filtros
   const countPendientes = proformas.filter(
     (p) =>
       p.estado === 'Pendiente' ||
       p.estado === 'En revisión' ||
-      p.estado === 'Pendiente de validación'
+      p.estado === 'Pendiente de validación' ||
+      p.estadoSupervision === 'Pendiente_Autorizacion'
+  ).length;
+
+  const countRechazadas = proformas.filter(
+    (p) =>
+      (p.estado === 'Rechazada v1' ||
+        p.estado === 'Rechazada v2' ||
+        p.estado === 'Rechazada' ||
+        p.estadoComercial === 'Rechazada_Cliente') &&
+      p.estado !== 'Derivada a KAM' &&
+      p.estado !== 'Derivada a CAM' &&
+      p.estadoComercial !== 'Derivada_KAM' &&
+      (p.conteoRechazos || 0) < 3
+  ).length;
+
+  const countPricing = proformas.filter(
+    (p) =>
+      p.estado === 'Enviado a Pricing' ||
+      p.estado === 'Tarifas Corregidas por Pricing' ||
+      p.estadoSupervision === 'Pricing_Resuelto'
   ).length;
 
   const countAprobadas = proformas.filter(
@@ -282,7 +305,27 @@ function DashboardHomeContent() {
       return (
         p.estado === 'Pendiente' ||
         p.estado === 'En revisión' ||
-        p.estado === 'Pendiente de validación'
+        p.estado === 'Pendiente de validación' ||
+        p.estadoSupervision === 'Pendiente_Autorizacion'
+      );
+    }
+    if (kpiFilter === 'rechazadas') {
+      return (
+        (p.estado === 'Rechazada v1' ||
+          p.estado === 'Rechazada v2' ||
+          p.estado === 'Rechazada' ||
+          p.estadoComercial === 'Rechazada_Cliente') &&
+        p.estado !== 'Derivada a KAM' &&
+        p.estado !== 'Derivada a CAM' &&
+        p.estadoComercial !== 'Derivada_KAM' &&
+        (p.conteoRechazos || 0) < 3
+      );
+    }
+    if (kpiFilter === 'pricing') {
+      return (
+        p.estado === 'Enviado a Pricing' ||
+        p.estado === 'Tarifas Corregidas por Pricing' ||
+        p.estadoSupervision === 'Pricing_Resuelto'
       );
     }
     if (kpiFilter === 'aprobadas') {
@@ -348,8 +391,8 @@ function DashboardHomeContent() {
         </p>
       </div>
 
-      {/* KPI Grid interactivo con función de filtro */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* KPI Grid interactivo con 6 estados clave */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {/* KPI 1: Totales / Todas */}
         <div
           role="button"
@@ -357,21 +400,21 @@ function DashboardHomeContent() {
           onClick={() => setKpiFilter('todos')}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setKpiFilter('todos'); }}
           title="Haz clic para ver todas las proformas registradas"
-          className={`p-5 rounded-xl border relative overflow-hidden group transition-all cursor-pointer select-none ${
+          className={`p-4 rounded-xl border relative overflow-hidden group transition-all cursor-pointer select-none flex flex-col justify-between ${
             kpiFilter === 'todos'
-              ? 'bg-purple-50/70 dark:bg-purple-950/40 border-purple-500 ring-2 ring-purple-500/30 shadow-md scale-[1.01]'
-              : 'bg-white dark:bg-slate-800 border-purple-900/10 dark:border-white/10 hover:border-purple-300 dark:hover:border-purple-600/40 hover:shadow-md'
+              ? 'bg-purple-50/80 dark:bg-purple-950/40 border-purple-500 ring-2 ring-purple-500/30 shadow-md scale-[1.02]'
+              : 'bg-white dark:bg-slate-800 border-purple-900/10 dark:border-white/10 hover:border-purple-300 dark:hover:border-purple-600/40 hover:shadow-sm'
           }`}
         >
-          <div className="flex items-center justify-between mb-3">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+          <div className="flex items-center justify-between mb-2">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
               kpiFilter === 'todos'
                 ? 'bg-purple-600 text-white'
                 : 'bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400'
             }`}>
-              <FileText className="w-5 h-5" />
+              <FileText className="w-4 h-4" />
             </div>
-            <span className={`text-micro font-semibold px-2 py-0.5 rounded-full transition-colors flex items-center gap-1 ${
+            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full transition-colors flex items-center gap-0.5 ${
               kpiFilter === 'todos'
                 ? 'bg-purple-600 text-white font-extrabold shadow-2xs'
                 : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-white/5'
@@ -380,10 +423,12 @@ function DashboardHomeContent() {
               {kpiFilter === 'todos' ? 'Activo' : 'General'}
             </span>
           </div>
-          <p className="text-3xl font-extrabold text-gray-900 dark:text-gray-100 leading-none mb-1">
-            {proformas.length}
-          </p>
-          <p className="text-caption text-gray-600 dark:text-gray-400 font-medium">Proformas registradas</p>
+          <div>
+            <p className="text-2xl font-extrabold text-gray-900 dark:text-gray-100 leading-none mb-1">
+              {proformas.length}
+            </p>
+            <p className="text-[11px] text-gray-600 dark:text-gray-400 font-medium leading-tight">Proformas totales</p>
+          </div>
         </div>
 
         {/* KPI 2: Pendientes */}
@@ -393,21 +438,21 @@ function DashboardHomeContent() {
           onClick={() => setKpiFilter((prev) => (prev === 'pendientes' ? 'todos' : 'pendientes'))}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setKpiFilter((prev) => (prev === 'pendientes' ? 'todos' : 'pendientes')); }}
           title={kpiFilter === 'pendientes' ? 'Haz clic para quitar filtro' : 'Haz clic para filtrar solo pendientes'}
-          className={`p-5 rounded-xl border relative overflow-hidden group transition-all cursor-pointer select-none ${
+          className={`p-4 rounded-xl border relative overflow-hidden group transition-all cursor-pointer select-none flex flex-col justify-between ${
             kpiFilter === 'pendientes'
-              ? 'bg-amber-50/80 dark:bg-amber-950/40 border-amber-500 ring-2 ring-amber-500/30 shadow-md scale-[1.01]'
-              : 'bg-white dark:bg-slate-800 border-purple-900/10 dark:border-white/10 hover:border-amber-300 dark:hover:border-amber-600/40 hover:shadow-md'
+              ? 'bg-amber-50/80 dark:bg-amber-950/40 border-amber-500 ring-2 ring-amber-500/30 shadow-md scale-[1.02]'
+              : 'bg-white dark:bg-slate-800 border-purple-900/10 dark:border-white/10 hover:border-amber-300 dark:hover:border-amber-600/40 hover:shadow-sm'
           }`}
         >
-          <div className="flex items-center justify-between mb-3">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+          <div className="flex items-center justify-between mb-2">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
               kpiFilter === 'pendientes'
                 ? 'bg-amber-600 text-white'
                 : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400'
             }`}>
-              <Hourglass className="w-5 h-5" />
+              <Hourglass className="w-4 h-4" />
             </div>
-            <span className={`text-micro font-semibold px-2 py-0.5 rounded-full transition-colors flex items-center gap-1 ${
+            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full transition-colors flex items-center gap-0.5 ${
               kpiFilter === 'pendientes'
                 ? 'bg-amber-600 text-white font-extrabold shadow-2xs'
                 : 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10'
@@ -416,34 +461,112 @@ function DashboardHomeContent() {
               {kpiFilter === 'pendientes' ? 'Filtrando' : 'En espera'}
             </span>
           </div>
-          <p className="text-3xl font-extrabold text-amber-600 dark:text-amber-400 leading-none mb-1">
-            {countPendientes}
-          </p>
-          <p className="text-caption text-gray-600 dark:text-gray-400 font-medium">Pendientes de respuesta</p>
+          <div>
+            <p className="text-2xl font-extrabold text-amber-600 dark:text-amber-400 leading-none mb-1">
+              {countPendientes}
+            </p>
+            <p className="text-[11px] text-gray-600 dark:text-gray-400 font-medium leading-tight">En validación</p>
+          </div>
         </div>
 
-        {/* KPI 3: Aprobadas */}
+        {/* KPI 3: Rechazadas V1 / V2 (Acción de corrección) */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setKpiFilter((prev) => (prev === 'rechazadas' ? 'todos' : 'rechazadas'))}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setKpiFilter((prev) => (prev === 'rechazadas' ? 'todos' : 'rechazadas')); }}
+          title={kpiFilter === 'rechazadas' ? 'Haz clic para quitar filtro' : 'Haz clic para filtrar solo rechazadas (por re-emitir)'}
+          className={`p-4 rounded-xl border relative overflow-hidden group transition-all cursor-pointer select-none flex flex-col justify-between ${
+            kpiFilter === 'rechazadas'
+              ? 'bg-orange-50/80 dark:bg-orange-950/40 border-orange-500 ring-2 ring-orange-500/30 shadow-md scale-[1.02]'
+              : 'bg-white dark:bg-slate-800 border-purple-900/10 dark:border-white/10 hover:border-orange-300 dark:hover:border-orange-600/40 hover:shadow-sm'
+          }`}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+              kpiFilter === 'rechazadas'
+                ? 'bg-orange-600 text-white'
+                : 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400'
+            }`}>
+              <RotateCcw className="w-4 h-4" />
+            </div>
+            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full transition-colors flex items-center gap-0.5 ${
+              kpiFilter === 'rechazadas'
+                ? 'bg-orange-600 text-white font-extrabold shadow-2xs'
+                : 'text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10'
+            }`}>
+              {kpiFilter === 'rechazadas' && <Check className="w-2.5 h-2.5" />}
+              {kpiFilter === 'rechazadas' ? 'Filtrando' : 'Acción'}
+            </span>
+          </div>
+          <div>
+            <p className="text-2xl font-extrabold text-orange-600 dark:text-orange-400 leading-none mb-1">
+              {countRechazadas}
+            </p>
+            <p className="text-[11px] text-gray-600 dark:text-gray-400 font-medium leading-tight">Rechazadas V1/V2</p>
+          </div>
+        </div>
+
+        {/* KPI 4: Pricing / Tarifas */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setKpiFilter((prev) => (prev === 'pricing' ? 'todos' : 'pricing'))}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setKpiFilter((prev) => (prev === 'pricing' ? 'todos' : 'pricing')); }}
+          title={kpiFilter === 'pricing' ? 'Haz clic para quitar filtro' : 'Haz clic para filtrar solo proformas en Pricing'}
+          className={`p-4 rounded-xl border relative overflow-hidden group transition-all cursor-pointer select-none flex flex-col justify-between ${
+            kpiFilter === 'pricing'
+              ? 'bg-sky-50/80 dark:bg-sky-950/40 border-sky-500 ring-2 ring-sky-500/30 shadow-md scale-[1.02]'
+              : 'bg-white dark:bg-slate-800 border-purple-900/10 dark:border-white/10 hover:border-sky-300 dark:hover:border-sky-600/40 hover:shadow-sm'
+          }`}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+              kpiFilter === 'pricing'
+                ? 'bg-sky-600 text-white'
+                : 'bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400'
+            }`}>
+              <Zap className="w-4 h-4" />
+            </div>
+            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full transition-colors flex items-center gap-0.5 ${
+              kpiFilter === 'pricing'
+                ? 'bg-sky-600 text-white font-extrabold shadow-2xs'
+                : 'text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-500/10'
+            }`}>
+              {kpiFilter === 'pricing' && <Check className="w-2.5 h-2.5" />}
+              {kpiFilter === 'pricing' ? 'Filtrando' : 'Tarifas'}
+            </span>
+          </div>
+          <div>
+            <p className="text-2xl font-extrabold text-sky-600 dark:text-sky-400 leading-none mb-1">
+              {countPricing}
+            </p>
+            <p className="text-[11px] text-gray-600 dark:text-gray-400 font-medium leading-tight">En Pricing</p>
+          </div>
+        </div>
+
+        {/* KPI 5: Aprobadas / Facturadas */}
         <div
           role="button"
           tabIndex={0}
           onClick={() => setKpiFilter((prev) => (prev === 'aprobadas' ? 'todos' : 'aprobadas'))}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setKpiFilter((prev) => (prev === 'aprobadas' ? 'todos' : 'aprobadas')); }}
-          title={kpiFilter === 'aprobadas' ? 'Haz clic para quitar filtro' : 'Haz clic para filtrar solo aprobadas'}
-          className={`p-5 rounded-xl border relative overflow-hidden group transition-all cursor-pointer select-none ${
+          title={kpiFilter === 'aprobadas' ? 'Haz clic para quitar filtro' : 'Haz clic para filtrar solo aprobadas y facturadas'}
+          className={`p-4 rounded-xl border relative overflow-hidden group transition-all cursor-pointer select-none flex flex-col justify-between ${
             kpiFilter === 'aprobadas'
-              ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-500 ring-2 ring-emerald-500/30 shadow-md scale-[1.01]'
-              : 'bg-white dark:bg-slate-800 border-purple-900/10 dark:border-white/10 hover:border-emerald-300 dark:hover:border-emerald-600/40 hover:shadow-md'
+              ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-500 ring-2 ring-emerald-500/30 shadow-md scale-[1.02]'
+              : 'bg-white dark:bg-slate-800 border-purple-900/10 dark:border-white/10 hover:border-emerald-300 dark:hover:border-emerald-600/40 hover:shadow-sm'
           }`}
         >
-          <div className="flex items-center justify-between mb-3">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+          <div className="flex items-center justify-between mb-2">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
               kpiFilter === 'aprobadas'
                 ? 'bg-emerald-600 text-white'
                 : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
             }`}>
-              <CheckCircle2 className="w-5 h-5" />
+              <CheckCircle2 className="w-4 h-4" />
             </div>
-            <span className={`text-micro font-semibold px-2 py-0.5 rounded-full transition-colors flex items-center gap-1 ${
+            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full transition-colors flex items-center gap-0.5 ${
               kpiFilter === 'aprobadas'
                 ? 'bg-emerald-600 text-white font-extrabold shadow-2xs'
                 : 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10'
@@ -452,34 +575,36 @@ function DashboardHomeContent() {
               {kpiFilter === 'aprobadas' ? 'Filtrando' : 'Listas'}
             </span>
           </div>
-          <p className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 leading-none mb-1">
-            {countAprobadas}
-          </p>
-          <p className="text-caption text-gray-600 dark:text-gray-400 font-medium">Aprobadas por clientes</p>
+          <div>
+            <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 leading-none mb-1">
+              {countAprobadas}
+            </p>
+            <p className="text-[11px] text-gray-600 dark:text-gray-400 font-medium leading-tight">Aprobadas / Fact.</p>
+          </div>
         </div>
 
-        {/* KPI 4: KAM / Escaladas */}
+        {/* KPI 6: KAM / Escaladas */}
         <div
           role="button"
           tabIndex={0}
           onClick={() => setKpiFilter((prev) => (prev === 'kam' ? 'todos' : 'kam'))}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setKpiFilter((prev) => (prev === 'kam' ? 'todos' : 'kam')); }}
           title={kpiFilter === 'kam' ? 'Haz clic para quitar filtro' : 'Haz clic para filtrar solo derivadas al KAM'}
-          className={`p-5 rounded-xl border relative overflow-hidden group transition-all cursor-pointer select-none ${
+          className={`p-4 rounded-xl border relative overflow-hidden group transition-all cursor-pointer select-none flex flex-col justify-between ${
             kpiFilter === 'kam'
-              ? 'bg-rose-50/80 dark:bg-rose-950/40 border-rose-500 ring-2 ring-rose-500/30 shadow-md scale-[1.01]'
-              : 'bg-white dark:bg-slate-800 border-purple-900/10 dark:border-white/10 hover:border-rose-300 dark:hover:border-rose-600/40 hover:shadow-md'
+              ? 'bg-rose-50/80 dark:bg-rose-950/40 border-rose-500 ring-2 ring-rose-500/30 shadow-md scale-[1.02]'
+              : 'bg-white dark:bg-slate-800 border-purple-900/10 dark:border-white/10 hover:border-rose-300 dark:hover:border-rose-600/40 hover:shadow-sm'
           }`}
         >
-          <div className="flex items-center justify-between mb-3">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+          <div className="flex items-center justify-between mb-2">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
               kpiFilter === 'kam'
                 ? 'bg-rose-600 text-white'
                 : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400'
             }`}>
-              <ShieldAlert className="w-5 h-5" />
+              <ShieldAlert className="w-4 h-4" />
             </div>
-            <span className={`text-micro font-semibold px-2 py-0.5 rounded-full transition-colors flex items-center gap-1 ${
+            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full transition-colors flex items-center gap-0.5 ${
               kpiFilter === 'kam'
                 ? 'bg-rose-600 text-white font-extrabold shadow-2xs'
                 : 'text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10'
@@ -488,10 +613,12 @@ function DashboardHomeContent() {
               {kpiFilter === 'kam' ? 'Filtrando' : 'Escaladas'}
             </span>
           </div>
-          <p className="text-3xl font-extrabold text-rose-600 dark:text-rose-400 leading-none mb-1">
-            {countKAM}
-          </p>
-          <p className="text-caption text-gray-600 dark:text-gray-400 font-medium">Derivadas al KAM (3 rechazos / V3)</p>
+          <div>
+            <p className="text-2xl font-extrabold text-rose-600 dark:text-rose-400 leading-none mb-1">
+              {countKAM}
+            </p>
+            <p className="text-[11px] text-gray-600 dark:text-gray-400 font-medium leading-tight">Derivadas KAM (V3)</p>
+          </div>
         </div>
       </div>
 
@@ -503,14 +630,22 @@ function DashboardHomeContent() {
             <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-micro font-extrabold text-white shadow-2xs ${
               kpiFilter === 'pendientes'
                 ? 'bg-amber-600'
+                : kpiFilter === 'rechazadas'
+                ? 'bg-orange-600'
+                : kpiFilter === 'pricing'
+                ? 'bg-sky-600'
                 : kpiFilter === 'aprobadas'
                 ? 'bg-emerald-600'
                 : 'bg-rose-600'
             }`}>
               {kpiFilter === 'pendientes'
-                ? '⏳ Pendientes de respuesta'
+                ? '⏳ En validación (Pendientes)'
+                : kpiFilter === 'rechazadas'
+                ? '⚠️ Rechazadas V1/V2 (Acción de re-emisión)'
+                : kpiFilter === 'pricing'
+                ? '⚡ Pricing / Tarifas'
                 : kpiFilter === 'aprobadas'
-                ? '✅ Aprobadas por clientes'
+                ? '✅ Aprobadas / Facturadas'
                 : '🛡️ Derivadas al KAM (V3)'}
             </span>
             <span className="text-micro text-gray-500 dark:text-gray-400 font-semibold">
