@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-export type ThemeId = 'purple' | 'red' | 'blue' | 'mocha' | 'dark';
+export type ThemeId = 'purple' | 'mocha' | 'dark';
 
 export interface ThemeConfig {
   id: ThemeId;
@@ -24,13 +24,14 @@ export interface ThemeConfig {
   checkboxBg: string;
   activeStepBorder: string;
   cardHeaderGradient: string;
+  sidebarOrbs: [string, string];
 }
 
 export const THEMES: Record<ThemeId, ThemeConfig> = {
   purple: {
     id: 'purple',
-    name: 'Púrpura Místico (Default)',
-    description: 'Diseño elegante con acentos violeta, malla suave y efecto cristal.',
+    name: 'Morado Starken (predeterminado)',
+    description: 'Diseño elegante con acentos morado y violeta, malla suave y efecto cristal.',
     previewBg: '#F5F3FF',
     previewPrimary: '#7C3AED',
     sidebarBgGradient: 'from-[#EDE9FE] via-[#F3F4F8] to-[#E0E7FF]',
@@ -46,50 +47,11 @@ export const THEMES: Record<ThemeId, ThemeConfig> = {
     checkboxBg: 'bg-purple-600 border-purple-600',
     activeStepBorder: 'border-purple-600 ring-2 ring-purple-600/15',
     cardHeaderGradient: 'from-purple-900 via-indigo-900 to-purple-800',
-  },
-  red: {
-    id: 'red',
-    name: 'Rojo Corporativo Starken',
-    description: 'Identidad corporativa clásica Starken con tonos carmesí y coral ligero.',
-    previewBg: '#FEF2F2',
-    previewPrimary: '#DC2626',
-    sidebarBgGradient: 'from-[#FEE2E2] via-[#FAF5F5] to-[#FECACA]',
-    sidebarGridColor: 'rgba(220, 38, 38, 0.05)',
-    mainBgGradient: 'from-[#FEF2F2] via-[#FAFAFA] to-[#FFF1F2]',
-    accentGradient: 'from-rose-600 to-red-600',
-    buttonGradient: 'from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700',
-    accentBg: 'bg-rose-600',
-    accentBorder: 'border-rose-600',
-    accentText: 'text-rose-600',
-    accentRing: 'ring-rose-600/20',
-    badgeBg: 'bg-rose-50 text-rose-700 border-rose-200/60',
-    checkboxBg: 'bg-rose-600 border-rose-600',
-    activeStepBorder: 'border-rose-600 ring-2 ring-rose-600/15',
-    cardHeaderGradient: 'from-rose-950 via-red-900 to-rose-900',
-  },
-  blue: {
-    id: 'blue',
-    name: 'Azul Logística Tech',
-    description: 'Estilo moderno con azul zafiro e índigo tech, enfocado en datos.',
-    previewBg: '#EFF6FF',
-    previewPrimary: '#2563EB',
-    sidebarBgGradient: 'from-[#DBEAFE] via-[#F1F5F9] to-[#E0E7FF]',
-    sidebarGridColor: 'rgba(37, 99, 235, 0.05)',
-    mainBgGradient: 'from-[#EFF6FF] via-[#F8FAFC] to-[#EEF2FF]',
-    accentGradient: 'from-blue-600 to-cyan-600',
-    buttonGradient: 'from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700',
-    accentBg: 'bg-blue-600',
-    accentBorder: 'border-blue-600',
-    accentText: 'text-blue-600',
-    accentRing: 'ring-blue-600/20',
-    badgeBg: 'bg-blue-50 text-blue-700 border-blue-200/60',
-    checkboxBg: 'bg-blue-600 border-blue-600',
-    activeStepBorder: 'border-blue-600 ring-2 ring-blue-600/15',
-    cardHeaderGradient: 'from-slate-900 via-blue-900 to-indigo-950',
+    sidebarOrbs: ['bg-purple-500/20', 'bg-indigo-500/15'],
   },
   mocha: {
     id: 'mocha',
-    name: 'Mocha Warm & Coffee',
+    name: 'Mocka cálido',
     description: 'Elegante paleta moka cálido, tonos café chocolate, espresso y crema.',
     previewBg: '#FAF5F0',
     previewPrimary: '#78350F',
@@ -106,11 +68,12 @@ export const THEMES: Record<ThemeId, ThemeConfig> = {
     checkboxBg: 'bg-amber-900 border-amber-900',
     activeStepBorder: 'border-amber-900 ring-2 ring-amber-900/20',
     cardHeaderGradient: 'from-stone-900 via-amber-950 to-stone-950',
+    sidebarOrbs: ['bg-amber-600/15', 'bg-stone-500/15'],
   },
   dark: {
     id: 'dark',
-    name: 'Cyber Dark (Verde Tenpo & Noche Púrpura)',
-    description: 'Modo oscuro cibernético con tonos púrpura noche y destellos verde Tenpo neón.',
+    name: 'Modo oscuro (Cyber Dark)',
+    description: 'Modo oscuro cibernético con tonos púrpura noche y destellos verde neón.',
     previewBg: '#0F172A',
     previewPrimary: '#10B981',
     sidebarBgGradient: 'from-[#0B0F19] via-[#0F172A] to-[#1E1B4B]',
@@ -126,6 +89,7 @@ export const THEMES: Record<ThemeId, ThemeConfig> = {
     checkboxBg: 'bg-emerald-500 border-emerald-500',
     activeStepBorder: 'border-emerald-400 ring-2 ring-emerald-400/30',
     cardHeaderGradient: 'from-slate-950 via-purple-950 to-slate-900',
+    sidebarOrbs: ['bg-emerald-500/15', 'bg-purple-500/15'],
   },
 };
 
@@ -145,6 +109,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (stored && THEMES[stored]) {
       setThemeIdState(stored);
       document.documentElement.classList.toggle('dark', stored === 'dark');
+      document.documentElement.setAttribute('data-theme', stored);
+    } else {
+      setThemeIdState('purple');
+      localStorage.setItem('starken_fe_theme', 'purple');
+      document.documentElement.classList.toggle('dark', false);
+      document.documentElement.setAttribute('data-theme', 'purple');
     }
   }, []);
 
@@ -152,6 +122,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setThemeIdState(id);
     localStorage.setItem('starken_fe_theme', id);
     document.documentElement.classList.toggle('dark', id === 'dark');
+    document.documentElement.setAttribute('data-theme', id);
   };
 
   return (

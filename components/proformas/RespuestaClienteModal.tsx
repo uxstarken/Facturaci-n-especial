@@ -188,10 +188,10 @@ export function RespuestaClienteModal({
                 <span className="font-mono font-extrabold text-micro bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300 px-2 py-0.5 rounded-md">
                   {proforma.id}
                 </span>
-                <span className="text-micro text-gray-500 font-medium">Validación de Cliente</span>
+                <span className="text-micro text-gray-500 font-medium">Validación de cliente</span>
               </div>
               <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                Registrar Respuesta del Cliente
+                Registrar respuesta del cliente
               </h3>
               <p className="text-caption text-gray-500 dark:text-gray-400">
                 {proforma.cliente} <span className="text-gray-400">·</span> RUT: {proforma.rut}
@@ -233,7 +233,7 @@ export function RespuestaClienteModal({
                     <CheckCircle2 className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="font-bold text-caption block">Cliente Aprobó</span>
+                    <span className="font-bold text-caption block">Cliente aprobó</span>
                     <span className="text-micro text-gray-500 dark:text-gray-400">Proforma aceptada</span>
                   </div>
                 </button>
@@ -255,7 +255,7 @@ export function RespuestaClienteModal({
                     <XCircle className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="font-bold text-caption block">Cliente Rechazó</span>
+                    <span className="font-bold text-caption block">Cliente rechazó</span>
                     <span className="text-micro text-gray-500 dark:text-gray-400">Requiere ajustes</span>
                   </div>
                 </button>

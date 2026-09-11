@@ -59,7 +59,7 @@ export const ConsolidacionOfsSection: React.FC<ConsolidacionOfsSectionProps> = (
               En Edición
             </span>
           ) : (
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-100 dark:bg-purple-500/10 text-purple-800 dark:text-purple-400 border border-purple-200 dark:border-white/10">
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${theme.badgeBg}`}>
               Precargado del Cliente
             </span>
           )}
@@ -70,7 +70,7 @@ export const ConsolidacionOfsSection: React.FC<ConsolidacionOfsSectionProps> = (
       <div className="p-4 bg-purple-50/50 dark:bg-purple-500/10 border border-purple-100/90 dark:border-white/10 rounded-lg text-xs space-y-3">
         <div className="flex items-center justify-between font-bold text-purple-950 dark:text-purple-200">
           <span>Condición Comercial Registrada:</span>
-          <span className="text-[11px] text-purple-700 dark:text-purple-400 font-medium">Acuerdo Consolidación</span>
+          <span className={`text-[11px] ${theme.accentText} font-medium`}>Acuerdo Consolidación</span>
         </div>
         <p className="text-gray-700 dark:text-gray-300 font-medium leading-relaxed bg-white dark:bg-slate-900/50 p-3 rounded-md border border-purple-100 dark:border-white/10 shadow-2xs">
           {detalleConsolidado}

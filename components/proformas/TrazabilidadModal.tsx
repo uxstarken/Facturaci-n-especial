@@ -99,7 +99,7 @@ export function TrazabilidadModal({ proforma, onClose }: TrazabilidadModalProps)
         <div className="border-b border-gray-100 dark:border-white/10 pb-3 pr-6">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-micro font-extrabold uppercase tracking-wider text-purple-700 dark:text-purple-400">
-              Historial de Iteraciones & Auditoría
+              Historial de iteraciones y auditoría
             </span>
             <span
               className={`text-micro font-bold px-2 py-0.5 rounded-full border ${
@@ -116,7 +116,7 @@ export function TrazabilidadModal({ proforma, onClose }: TrazabilidadModalProps)
             </span>
           </div>
           <h3 className="text-title-2 font-extrabold text-gray-900 dark:text-gray-100">
-            Trazabilidad de Proforma: {proforma.id}
+            Trazabilidad de proforma: {proforma.id}
           </h3>
           <p className="text-caption text-gray-500 font-medium">
             Cliente: <strong className="text-gray-800 dark:text-gray-200">{proforma.cliente}</strong> · RUT: {proforma.rut}
@@ -176,11 +176,11 @@ export function TrazabilidadModal({ proforma, onClose }: TrazabilidadModalProps)
                         </span>
                       ) : isRechazado ? (
                         <span className="px-2 py-0.5 bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300 rounded-md inline-flex items-center gap-1">
-                          <XCircle className="w-3 h-3" /> Rechazada por Cliente
+                          <XCircle className="w-3 h-3" /> Rechazada por cliente
                         </span>
                       ) : (
                         <span className="px-2 py-0.5 bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 rounded-md inline-flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> En Validación
+                          <Clock className="w-3 h-3" /> En validación
                         </span>
                       )}
                     </div>
@@ -190,7 +190,7 @@ export function TrazabilidadModal({ proforma, onClose }: TrazabilidadModalProps)
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-caption">
                     <div className="bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-purple-900/10 dark:border-white/10 space-y-1">
                       <span className="text-micro font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-purple-600" /> Fecha y Hora de Creación
+                        <Calendar className="w-3 h-3 text-purple-600" /> Fecha y hora de creación
                       </span>
                       <strong className="text-gray-900 dark:text-gray-100 font-mono block">
                         {item.fechaCreacion}
@@ -199,7 +199,7 @@ export function TrazabilidadModal({ proforma, onClose }: TrazabilidadModalProps)
 
                     <div className="bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-purple-900/10 dark:border-white/10 space-y-1">
                       <span className="text-micro font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-purple-600" /> Fecha y Hora de Respuesta
+                        <Clock className="w-3 h-3 text-purple-600" /> Fecha y hora de respuesta
                       </span>
                       <strong
                         className={`font-mono block ${
@@ -228,7 +228,7 @@ export function TrazabilidadModal({ proforma, onClose }: TrazabilidadModalProps)
                       <div className="flex items-center gap-2">
                         <FileImage className="w-4 h-4 text-purple-600 shrink-0" />
                         <span className="text-caption font-bold text-gray-800 dark:text-gray-200">
-                          Respaldo Correo del Cliente ({item.version})
+                          Respaldo de correo del cliente ({item.version})
                         </span>
                       </div>
                       <a

@@ -13,7 +13,7 @@ export default function PerfilPage() {
     <div className="max-w-4xl space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-h1 font-bold text-gray-900 dark:text-gray-100">Mi Perfil & Personalización</h1>
+        <h1 className="text-h1 font-bold text-gray-900 dark:text-gray-100">Mi perfil y personalización</h1>
         <p className="text-caption text-gray-600 dark:text-gray-400">
           Administra la información de tu cuenta y personaliza el tema visual de la plataforma.
         </p>
@@ -52,7 +52,7 @@ export default function PerfilPage() {
         <div className="flex items-center gap-2 border-b border-gray-100 dark:border-white/10 pb-3">
           <Palette className="w-4 h-4 text-purple-600 dark:text-emerald-400" />
           <h2 className="text-eyebrow font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
-            Temas Visuales de Color (Personalización de Interfaz)
+            Temas visuales de color (personalización de interfaz)
           </h2>
         </div>
 
@@ -60,7 +60,7 @@ export default function PerfilPage() {
           Selecciona una paleta de color. El tema seleccionado se aplicará de inmediato a toda tu sesión y se recordará automáticamente.
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 pt-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
           {(Object.keys(THEMES) as ThemeId[]).map((id) => {
             const t = THEMES[id];
             const isSelected = themeId === id;

@@ -15,9 +15,9 @@ export function Topbar() {
   const [timeStr, setTimeStr] = useState<string>('');
 
   const getBreadcrumbTitle = () => {
-    if (pathname === '/proformas/nueva') return 'Crear Proforma';
+    if (pathname === '/proformas/nueva') return 'Crear proforma';
     if (pathname === '/auditoria') return 'Auditorías';
-    if (pathname === '/perfil') return 'Mi Perfil & Configuración';
+    if (pathname === '/perfil') return 'Mi perfil y personalización';
     return 'Home';
   };
 
@@ -56,13 +56,13 @@ export function Topbar() {
 
         <button className="w-9 h-9 flex items-center justify-center rounded-md bg-purple-50/50 dark:bg-white/5 border border-purple-100 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:text-purple-700 dark:hover:text-emerald-400 hover:bg-purple-100/50 dark:hover:bg-white/10 transition-all relative">
           <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-purple-600 dark:bg-emerald-400 rounded-full ring-2 ring-white dark:ring-slate-900" />
+          <span className={`absolute top-1.5 right-1.5 w-2 h-2 ${theme.accentBg} rounded-full ring-2 ring-white dark:ring-slate-900`} />
         </button>
 
         <Link
           href="/perfil"
           className={`w-8 h-8 rounded-full bg-gradient-to-br ${theme.accentGradient} flex items-center justify-center text-xs font-bold text-white cursor-pointer hover:ring-2 ${theme.accentRing} transition-all`}
-          title="Ver Perfil y Configuración de Tema"
+          title="Ver perfil y personalización de temas"
         >
           {user ? getInitials(user.name) : 'AN'}
         </Link>

@@ -43,8 +43,9 @@ function DashboardHomeContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
-  // Dropdown de cambio de estado en el badge
+  // Dropdown de cambio de estado en el badge — posicionado con fixed para escapar del overflow
   const [openStatusDropdownId, setOpenStatusDropdownId] = useState<string | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; openUp: boolean } | null>(null);
 
   // Fila expandida para ver proformas anteriores (Línea de tiempo horizontal inline)
   const [expandedProformaId, setExpandedProformaId] = useState<string | null>(null);
@@ -226,6 +227,24 @@ function DashboardHomeContent() {
     }
   }, [searchParams, showToast]);
 
+  // Cerrar dropdown de estado al hacer scroll o cambiar tamaño de ventana
+  useEffect(() => {
+    if (!openStatusDropdownId) return;
+
+    const handleScrollOrResize = () => {
+      setOpenStatusDropdownId(null);
+      setDropdownPos(null);
+    };
+
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    window.addEventListener('resize', handleScrollOrResize);
+
+    return () => {
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
+  }, [openStatusDropdownId]);
+
   const filteredProformas = proformas.filter(
     (p) =>
       p.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -349,10 +368,10 @@ function DashboardHomeContent() {
         <div className="p-5 border-b border-purple-900/10 dark:border-white/10 bg-purple-50/30 dark:bg-white/5 flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h2 className="text-h2 font-semibold text-gray-900 dark:text-gray-100">
-              Proformas y Control de Versiones (V1, V2, V3)
+              Proformas y control de versiones (V1, V2, V3)
             </h2>
             <p className="text-caption text-gray-500 dark:text-gray-400">
-              Visualización de doble estado: Validación de Jefatura vs. Ciclo Comercial con Cliente
+              Visualización de doble estado: validación de jefatura vs. ciclo comercial con cliente
             </p>
           </div>
 
@@ -382,11 +401,11 @@ function DashboardHomeContent() {
           <table className="w-full text-left text-body">
             <thead className="bg-purple-50/50 dark:bg-white/5 border-b border-purple-900/10 dark:border-white/10 text-gray-600 dark:text-gray-400 font-semibold uppercase tracking-wider text-micro">
               <tr>
-                <th className="py-3.5 px-5">N° Proforma</th>
-                <th className="py-3.5 px-5">Cliente & RUT</th>
-                <th className="py-3.5 px-5">Monto Neto</th>
-                <th className="py-3.5 px-5">Fecha Creación</th>
-                <th className="py-3.5 px-5">Versión & Doble Estado (Interno / Comercial)</th>
+                <th className="py-3.5 px-5">N° de proforma</th>
+                <th className="py-3.5 px-5">Cliente y RUT</th>
+                <th className="py-3.5 px-5">Monto neto</th>
+                <th className="py-3.5 px-5">Fecha de creación</th>
+                <th className="py-3.5 px-5">Versión y doble estado (interno / comercial)</th>
                 <th className="py-3.5 px-5 text-right">Gestionar</th>
               </tr>
             </thead>
@@ -566,7 +585,7 @@ function DashboardHomeContent() {
                                 <div className="relative inline-block text-left">
                                   <button
                                     type="button"
-                                    onClick={() => {
+                                    onClick={(e) => {
                                       if (esFacturado || esDerivadaCAM || esEnviadoPricing) {
                                         showToast(
                                           esDerivadaCAM
@@ -578,7 +597,23 @@ function DashboardHomeContent() {
                                         );
                                         return;
                                       }
-                                      setOpenStatusDropdownId(isStatusMenuOpen ? null : p.id);
+                                      if (isStatusMenuOpen) {
+                                        setOpenStatusDropdownId(null);
+                                        setDropdownPos(null);
+                                        return;
+                                      }
+                                      // Calcular posición real en pantalla para position:fixed
+                                      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                      const neededHeight = esAprobada ? 90 : 150;
+                                      const spaceBelow = window.innerHeight - rect.bottom;
+                                      const openUp = spaceBelow < neededHeight && rect.top > neededHeight;
+                                      const left = Math.max(12, Math.min(rect.left, window.innerWidth - 275));
+                                      setDropdownPos({
+                                        top: openUp ? rect.top - 6 : rect.bottom + 6,
+                                        left,
+                                        openUp,
+                                      });
+                                      setOpenStatusDropdownId(p.id);
                                     }}
                                     title={
                                       esFacturado
@@ -616,93 +651,7 @@ function DashboardHomeContent() {
                                     )}
                                   </button>
 
-                                  {/* Dropdown Menú Comercial */}
-                                  {isStatusMenuOpen && !(esFacturado || esDerivadaCAM || esEnviadoPricing) && (
-                                    <>
-                                      <div
-                                        className="fixed inset-0 z-20"
-                                        onClick={() => setOpenStatusDropdownId(null)}
-                                      />
-                                      <div className="absolute left-0 top-full mt-1.5 w-64 bg-white dark:bg-slate-800 border border-purple-200 dark:border-white/10 rounded-xl shadow-xl z-30 p-1.5 space-y-1 animate-in fade-in slide-in-from-top-1 text-left">
-                                        {esAprobada ? (
-                                          <>
-                                            <div className="px-2.5 py-1 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                                              Siguiente Acción Comercial:
-                                            </div>
-
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                setOpenStatusDropdownId(null);
-                                                setSelectedFacturarProforma(p);
-                                              }}
-                                              className="w-full px-2.5 py-2 text-left text-caption font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/15 rounded-lg flex items-center gap-2.5 transition-colors cursor-pointer"
-                                            >
-                                              <div className="w-6 h-6 rounded-md bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                                                <Receipt className="w-4 h-4" />
-                                              </div>
-                                              <div>
-                                                <span className="block leading-tight font-extrabold text-emerald-900 dark:text-emerald-200">
-                                                  Facturar Proforma
-                                                </span>
-                                                <span className="text-[10px] font-normal text-gray-500 dark:text-gray-400">
-                                                  Registrar N° de factura y respaldo
-                                                </span>
-                                              </div>
-                                            </button>
-                                          </>
-                                        ) : (
-                                          <>
-                                            <div className="px-2.5 py-1 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                                              Registrar Respuesta Cliente:
-                                            </div>
-
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                setOpenStatusDropdownId(null);
-                                                setSelectedRespuesta({ proforma: p, tipo: 'Aprobada' });
-                                              }}
-                                              className="w-full px-2.5 py-2 text-left text-caption font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/15 rounded-lg flex items-center gap-2.5 transition-colors cursor-pointer"
-                                            >
-                                              <div className="w-6 h-6 rounded-md bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                                                <CheckCircle2 className="w-4 h-4" />
-                                              </div>
-                                              <div>
-                                                <span className="block leading-tight font-extrabold text-emerald-900 dark:text-emerald-200">
-                                                  Aprobada por Cliente
-                                                </span>
-                                                <span className="text-[10px] font-normal text-gray-500 dark:text-gray-400">
-                                                  Adjuntar respaldo de correo
-                                                </span>
-                                              </div>
-                                            </button>
-
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                setOpenStatusDropdownId(null);
-                                                setSelectedRespuesta({ proforma: p, tipo: 'Rechazada' });
-                                              }}
-                                              className="w-full px-2.5 py-2 text-left text-caption font-bold text-rose-800 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/15 rounded-lg flex items-center gap-2.5 transition-colors cursor-pointer"
-                                            >
-                                              <div className="w-6 h-6 rounded-md bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
-                                                <XCircle className="w-4 h-4" />
-                                              </div>
-                                              <div>
-                                                <span className="block leading-tight font-extrabold text-rose-900 dark:text-rose-200">
-                                                  Rechazada por Cliente
-                                                </span>
-                                                <span className="text-[10px] font-normal text-gray-500 dark:text-gray-400">
-                                                  Generará iteración a siguiente versión
-                                                </span>
-                                              </div>
-                                            </button>
-                                          </>
-                                        )}
-                                      </div>
-                                    </>
-                                  )}
+                                  {/* Dropdown portal — renderizado con fixed position fuera de la tabla */}
                                 </div>
                               </div>
                             )
@@ -785,7 +734,7 @@ function DashboardHomeContent() {
                                 </div>
                                 <div>
                                   <h4 className="text-caption font-extrabold text-gray-900 dark:text-gray-100">
-                                    Línea de Tiempo y Versiones Anteriores —{' '}
+                                    Línea de tiempo y versiones anteriores —{' '}
                                     <span className="font-mono text-purple-700 dark:text-purple-300">
                                       {p.id}
                                     </span>
@@ -997,6 +946,97 @@ function DashboardHomeContent() {
           onSuccess={handleProformaActualizada}
         />
       )}
+      {/* ═══ PORTAL: Dropdown de Estado — position:fixed, escapa del overflow de la tabla ═══ */}
+      {openStatusDropdownId && dropdownPos && (() => {
+        const proformaActiva = proformas.find((p) => p.id === openStatusDropdownId);
+        if (!proformaActiva) return null;
+        const esAprobadaP = proformaActiva.estado === 'Aprobada por Cliente' || proformaActiva.estado === 'Aprobada';
+        return (
+          <>
+            {/* Capa de cierre al hacer click fuera */}
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => { setOpenStatusDropdownId(null); setDropdownPos(null); }}
+            />
+            {/* Menú posicionado con coordenadas absolutas de pantalla */}
+            <div
+              style={{
+                position: 'fixed',
+                top: dropdownPos.top,
+                left: dropdownPos.left,
+                transform: dropdownPos.openUp ? 'translateY(-100%)' : 'none',
+                zIndex: 50,
+              }}
+              className="w-64 bg-white dark:bg-slate-800 border border-purple-200 dark:border-white/10 rounded-xl shadow-2xl p-1.5 space-y-1 text-left animate-in fade-in duration-150"
+            >
+              {esAprobadaP ? (
+                <>
+                  <div className="px-2.5 py-1 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    Siguiente acción comercial:
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenStatusDropdownId(null);
+                      setDropdownPos(null);
+                      setSelectedFacturarProforma(proformaActiva);
+                    }}
+                    className="w-full px-2.5 py-2 text-left text-caption font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/15 rounded-lg flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <div className="w-6 h-6 rounded-md bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                      <Receipt className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="block leading-tight font-extrabold text-emerald-900 dark:text-emerald-200">Facturar proforma</span>
+                      <span className="text-[10px] font-normal text-gray-500 dark:text-gray-400">Registrar N° de factura y respaldo</span>
+                    </div>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="px-2.5 py-1 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    Registrar respuesta del cliente:
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenStatusDropdownId(null);
+                      setDropdownPos(null);
+                      setSelectedRespuesta({ proforma: proformaActiva, tipo: 'Aprobada' });
+                    }}
+                    className="w-full px-2.5 py-2 text-left text-caption font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/15 rounded-lg flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <div className="w-6 h-6 rounded-md bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="block leading-tight font-extrabold text-emerald-900 dark:text-emerald-200">Aprobada por cliente</span>
+                      <span className="text-[10px] font-normal text-gray-500 dark:text-gray-400">Adjuntar respaldo de correo</span>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenStatusDropdownId(null);
+                      setDropdownPos(null);
+                      setSelectedRespuesta({ proforma: proformaActiva, tipo: 'Rechazada' });
+                    }}
+                    className="w-full px-2.5 py-2 text-left text-caption font-bold text-rose-800 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/15 rounded-lg flex items-center gap-2.5 transition-colors cursor-pointer"
+                  >
+                    <div className="w-6 h-6 rounded-md bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                      <XCircle className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="block leading-tight font-extrabold text-rose-900 dark:text-rose-200">Rechazada por cliente</span>
+                      <span className="text-[10px] font-normal text-gray-500 dark:text-gray-400">Generará iteración a siguiente versión</span>
+                    </div>
+                  </button>
+                </>
+              )}
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 }

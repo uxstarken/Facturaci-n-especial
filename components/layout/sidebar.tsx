@@ -23,14 +23,14 @@ export function Sidebar() {
     { label: 'Crear Proforma', href: '/proformas/nueva', icon: FilePlus2 },
     { label: 'Aprobaciones', href: '/aprobaciones', icon: CheckSquare, badge: '4' },
     { label: 'Auditorías', href: '/auditoria', icon: ShieldAlert, badge: user?.role !== 'Analista' ? '3' : undefined },
-    { label: 'Mi Perfil & Temas', href: '/perfil', icon: User },
+    { label: 'Mi perfil y temas', href: '/perfil', icon: User },
   ];
 
   return (
     <aside className={`w-[230px] h-screen bg-gradient-to-b ${theme.sidebarBgGradient} border-r border-purple-900/15 dark:border-white/5 flex flex-col fixed top-0 left-0 z-50 shadow-[4px_0_24px_rgba(0,0,0,0.06)] overflow-hidden`}>
       {/* Background Orbs */}
-      <div className="absolute w-52 h-52 bg-purple-500/20 rounded-full blur-3xl -top-16 -left-16 pointer-events-none animate-pulse" />
-      <div className="absolute w-44 h-44 bg-indigo-500/15 rounded-full blur-3xl bottom-10 -right-16 pointer-events-none" />
+      <div className={`absolute w-52 h-52 ${theme.sidebarOrbs[0]} rounded-full blur-3xl -top-16 -left-16 pointer-events-none animate-pulse`} />
+      <div className={`absolute w-44 h-44 ${theme.sidebarOrbs[1]} rounded-full blur-3xl bottom-10 -right-16 pointer-events-none`} />
 
       {/* Grid Pattern Overlay */}
       <div

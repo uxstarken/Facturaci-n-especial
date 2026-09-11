@@ -582,7 +582,7 @@ function EditarProformaContent() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
-      {/* Botón Volver y Selector de Modo */}
+      {/* Botón Volver */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <Link
           href="/"
@@ -591,34 +591,6 @@ function EditarProformaContent() {
           <ArrowLeft className="w-4 h-4" />
           Volver al panel principal
         </Link>
-
-        {/* Selector de Modo de Regularización */}
-        <div className="inline-flex items-center p-1 bg-gray-100 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-white/10 text-xs shadow-2xs">
-          <button
-            type="button"
-            onClick={() => setActiveFlowMode('pricing')}
-            className={`px-3.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              activeFlowMode === 'pricing'
-                ? 'bg-sky-600 text-white shadow-xs'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-            }`}
-          >
-            <Tag className="w-3.5 h-3.5" />
-            <span>Resolución Tarifas (Pricing)</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveFlowMode('medidas')}
-            className={`px-3.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              activeFlowMode === 'medidas'
-                ? 'bg-purple-600 text-white shadow-xs'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-            }`}
-          >
-            <UploadCloud className="w-3.5 h-3.5" />
-            <span>Regularización por Medidas (SKU)</span>
-          </button>
-        </div>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════
@@ -639,10 +611,12 @@ function EditarProformaContent() {
                 </span>
               </div>
               <h1 className="text-h1 font-bold text-gray-900 dark:text-gray-100">
-                Actualizar Proforma con Nuevas Tarifas de Pricing
+                Actualizar proforma con nuevas tarifas de Pricing
               </h1>
               <p className="text-caption text-gray-600 dark:text-gray-400 mt-1">
-                El equipo de Pricing corrigió los tramos tarifarios en el maestro. Revisa el impacto económico del nuevo valor y genera la versión V2 para enviarla a visto bueno de Jefatura.
+                El equipo de Pricing corrigió los tramos tarifarios en el maestro. Revisa el impacto económico del nuevo valor y genera
+                <br />
+                la versión V2 para enviarla a visto bueno de Jefatura.
               </p>
             </div>
 
@@ -653,7 +627,7 @@ function EditarProformaContent() {
                 className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-sky-300 dark:border-sky-500/30 hover:bg-sky-50 dark:hover:bg-sky-500/10 text-sky-800 dark:text-sky-300 rounded-xl text-caption font-bold transition-all inline-flex items-center gap-2 shadow-2xs cursor-pointer hover:scale-105 active:scale-95"
               >
                 <Download className="w-4 h-4" />
-                <span>Descargar Detalle Tarifario</span>
+                <span>Descargar detalle tarifario</span>
               </button>
             </div>
           </div>
@@ -670,7 +644,7 @@ function EditarProformaContent() {
                       <FileSpreadsheet className="w-4 h-4" />
                     </div>
                     <h3 className="text-h2 font-bold text-gray-900 dark:text-gray-100">
-                      Detalle de la Proforma Original
+                      Detalle de la proforma original
                     </h3>
                   </div>
                   <span className="text-micro font-extrabold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded">
@@ -688,7 +662,7 @@ function EditarProformaContent() {
                   </div>
 
                   <div>
-                    <span className="text-micro text-gray-500 dark:text-gray-400 block font-medium">Cuenta Corriente</span>
+                    <span className="text-micro text-gray-500 dark:text-gray-400 block font-medium">Cuenta corriente</span>
                     <span className="font-mono font-bold text-purple-700 dark:text-purple-400 text-body block">
                       CTA-001
                     </span>
@@ -696,14 +670,14 @@ function EditarProformaContent() {
                   </div>
 
                   <div>
-                    <span className="text-micro text-gray-500 dark:text-gray-400 block font-medium">Total OFs Involucradas</span>
+                    <span className="text-micro text-gray-500 dark:text-gray-400 block font-medium">Total de OFs involucradas</span>
                     <span className="font-mono font-extrabold text-gray-900 dark:text-gray-100 text-body">
-                      500 Órdenes de Flete
+                      500 Órdenes de flete
                     </span>
                   </div>
 
                   <div>
-                    <span className="text-micro text-gray-500 dark:text-gray-400 block font-medium">Monto Original Facturado</span>
+                    <span className="text-micro text-gray-500 dark:text-gray-400 block font-medium">Monto original facturado</span>
                     <span className="font-mono font-extrabold text-gray-900 dark:text-gray-100 text-body">
                       {formatCurrency(pricingMontoOriginal)}
                     </span>
@@ -714,7 +688,7 @@ function EditarProformaContent() {
                 <div className="p-3.5 bg-rose-50/80 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl text-caption text-rose-900 dark:text-rose-200 flex items-start gap-2.5">
                   <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
                   <div>
-                    <strong className="block font-bold">Objeción de Tarifa / Precio del Cliente:</strong>
+                    <strong className="block font-bold">Objeción de tarifa o precio del cliente:</strong>
                     <p className="text-micro text-rose-800 dark:text-rose-300 mt-0.5">
                       "La tarifa unitaria aplicada por bulto no coincide con la adenda de contrato 2026 negociada para distribución central."
                     </p>
@@ -723,7 +697,7 @@ function EditarProformaContent() {
               </div>
 
               <div className="pt-2 text-micro text-gray-400 font-medium">
-                💡 Esta proforma fue derivada y resuelta directamente por el equipo de Pricing.
+                💡 Esta proforma fue derivada y resuelta directamente por el equipo de pricing.
               </div>
             </div>
 
@@ -736,19 +710,19 @@ function EditarProformaContent() {
                       <Tag className="w-4 h-4" />
                     </div>
                     <h3 className="text-h2 font-bold text-gray-900 dark:text-gray-100">
-                      Resolución y Dictamen de Pricing
+                      Resolución y dictamen de pricing
                     </h3>
                   </div>
                   <span className="text-micro font-extrabold text-sky-900 dark:text-sky-200 bg-sky-100 dark:bg-sky-500/20 border border-sky-300 px-2 py-0.5 rounded-full flex items-center gap-1">
                     <CheckCircle2 className="w-3 h-3 text-sky-600 dark:text-sky-400" />
-                    Tarifa Corregida en Maestro
+                    Tarifa corregida en maestro
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 text-caption">
                   <div className="bg-sky-50/50 dark:bg-sky-950/20 p-2.5 rounded-xl border border-sky-100 dark:border-sky-900/30">
                     <span className="text-micro font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
-                      Analista Pricing
+                      Analista de Pricing
                     </span>
                     <strong className="text-gray-900 dark:text-gray-100 font-bold block">
                       Carlos Mendoza
@@ -771,7 +745,7 @@ function EditarProformaContent() {
                 <div className="p-3.5 bg-sky-50/80 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800/40 rounded-xl text-caption text-sky-950 dark:text-sky-200 flex items-start gap-2.5">
                   <ShieldCheck className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
                   <div>
-                    <strong className="block font-bold">Dictamen Técnico y Corrección Aplicada:</strong>
+                    <strong className="block font-bold">Dictamen técnico y corrección aplicada:</strong>
                     <p className="text-micro text-sky-900 dark:text-sky-300 mt-0.5 leading-relaxed">
                       "Se verificó la cláusula 4.2 del anexo 2026. Se redujo la tarifa base unitaria de <strong>$13.600</strong> a <strong>$11.800</strong> para el tramo metropolitano y regional. El recálculo automático aplica a las 500 órdenes de flete."
                     </p>
@@ -795,7 +769,7 @@ function EditarProformaContent() {
                 </div>
                 <div>
                   <h3 className="text-h2 font-bold text-gray-900 dark:text-gray-100">
-                    Comparativo de Impacto Económico y Emisión V2
+                    Comparativo de impacto económico y emisión V2
                   </h3>
                   <p className="text-caption text-gray-500 dark:text-gray-400">
                     Resumen del ajuste tarifario calculado para las 500 órdenes de flete
@@ -805,7 +779,7 @@ function EditarProformaContent() {
 
               <span className="px-3 py-1 bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-300 text-emerald-800 dark:text-emerald-300 rounded-full text-micro font-extrabold flex items-center gap-1">
                 <Sparkles className="w-3 h-3 text-emerald-600" />
-                Recálculo 100% Validado
+                Recálculo 100% validado
               </span>
             </div>
 
@@ -813,7 +787,7 @@ function EditarProformaContent() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="p-4 rounded-xl bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-white/10 space-y-1">
                 <span className="text-micro font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
-                  Monto Original (V1)
+                  Monto original (V1)
                 </span>
                 <span className="text-2xl font-mono font-extrabold text-gray-900 dark:text-gray-100 block">
                   {formatCurrency(pricingMontoOriginal)}
@@ -823,7 +797,7 @@ function EditarProformaContent() {
 
               <div className="p-4 rounded-xl bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800/40 space-y-1">
                 <span className="text-micro font-bold text-sky-800 dark:text-sky-300 uppercase tracking-wider block flex items-center gap-1">
-                  <TrendingDown className="w-3.5 h-3.5 text-sky-600" /> Ajuste Tarifario Pricing
+                  <TrendingDown className="w-3.5 h-3.5 text-sky-600" /> Ajuste tarifario de Pricing
                 </span>
                 <span className="text-2xl font-mono font-extrabold text-sky-700 dark:text-sky-300 block">
                   {formatCurrency(pricingAjuste)} ({pricingPorcentaje}%)
@@ -833,7 +807,7 @@ function EditarProformaContent() {
 
               <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border-2 border-emerald-400 dark:border-emerald-600/50 space-y-1 shadow-2xs">
                 <span className="text-micro font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider block flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Nuevo Monto Facturable (V2)
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Nuevo monto facturable (V2)
                 </span>
                 <span className="text-2xl font-mono font-extrabold text-emerald-700 dark:text-emerald-300 block">
                   {formatCurrency(pricingMontoV2)}
@@ -847,11 +821,11 @@ function EditarProformaContent() {
               <table className="w-full text-left border-collapse">
                 <thead className="bg-gray-50 dark:bg-slate-900/80 text-micro text-gray-600 dark:text-gray-400 uppercase font-bold border-b border-gray-200 dark:border-white/10">
                   <tr>
-                    <th className="py-3 px-4">Tramo / Servicio</th>
-                    <th className="py-3 px-4 text-center">OFs Involucradas</th>
-                    <th className="py-3 px-4 text-right">Tarifa Original V1</th>
-                    <th className="py-3 px-4 text-right">Tarifa Corregida Pricing (V2)</th>
-                    <th className="py-3 px-4 text-right">Subtotal Facturable V2</th>
+                    <th className="py-3 px-4">Tramo / servicio</th>
+                    <th className="py-3 px-4 text-center">OFs involucradas</th>
+                    <th className="py-3 px-4 text-right">Tarifa original V1</th>
+                    <th className="py-3 px-4 text-right">Tarifa corregida por Pricing (V2)</th>
+                    <th className="py-3 px-4 text-right">Subtotal facturable V2</th>
                     <th className="py-3 px-4 text-center">Estado</th>
                   </tr>
                 </thead>
@@ -892,7 +866,7 @@ function EditarProformaContent() {
 
                   <tr className="bg-purple-50/40 dark:bg-slate-900 font-bold border-t-2 border-purple-200 dark:border-purple-800/40">
                     <td className="py-3 px-4 font-sans font-extrabold text-purple-950 dark:text-purple-200">
-                      Total Consolidado Proforma V2
+                      Total consolidado proforma V2
                     </td>
                     <td className="py-3 px-4 text-center font-extrabold text-purple-900 dark:text-purple-300">
                       500 OFs
@@ -904,7 +878,7 @@ function EditarProformaContent() {
                     </td>
                     <td className="py-3 px-4 text-center">
                       <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 rounded text-micro font-sans font-extrabold">
-                        Listo para Emisión
+                        Listo para emisión
                       </span>
                     </td>
                   </tr>
@@ -920,7 +894,7 @@ function EditarProformaContent() {
                 className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-purple-200 dark:border-white/10 hover:bg-purple-50 dark:hover:bg-purple-500/10 text-purple-700 dark:text-purple-300 rounded-xl text-caption font-bold transition-all inline-flex items-center gap-2 shadow-2xs cursor-pointer"
               >
                 <Download className="w-4 h-4" />
-                <span>Descargar Detalle Tarifario (Excel)</span>
+                <span>Descargar detalle tarifario (Excel)</span>
               </button>
 
               <button
@@ -929,7 +903,7 @@ function EditarProformaContent() {
                 className="px-6 py-3 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white rounded-xl text-caption font-extrabold shadow-md shadow-purple-700/25 transition-all cursor-pointer inline-flex items-center gap-2 active:scale-95"
               >
                 <Send className="w-4 h-4" />
-                <span>Generar y Solicitar Autorización Jefatura (V2) ➔</span>
+                <span>Generar y solicitar autorización de jefatura (V2) ➔</span>
               </button>
             </div>
           </div>
@@ -951,7 +925,7 @@ function EditarProformaContent() {
                 </span>
               </div>
               <h1 className="text-h1 font-bold text-gray-900 dark:text-gray-100">
-                Actualizar y Regularizar Proforma por SKU
+                Actualizar y regularizar proforma por SKU
               </h1>
               <p className="text-caption text-gray-600 dark:text-gray-400 mt-1">
                 Descarga la planilla base, ajusta las mediciones y procesa el cruce automatizado contra el maestro y agente IA.
@@ -965,7 +939,7 @@ function EditarProformaContent() {
                 className="px-4 py-2.5 bg-white dark:bg-slate-800 border border-purple-200 dark:border-white/10 hover:bg-purple-50 dark:hover:bg-purple-500/10 text-purple-700 dark:text-purple-300 rounded-xl text-caption font-bold transition-all inline-flex items-center gap-2 shadow-2xs cursor-pointer hover:scale-105 active:scale-95"
               >
                 <Download className="w-4 h-4" />
-                <span>Descargar Planilla Base</span>
+                <span>Descargar planilla base</span>
               </button>
             </div>
           </div>
@@ -1112,7 +1086,7 @@ function EditarProformaContent() {
               ) : (
                 <>
                   <Sparkles className="w-4 h-4" />
-                  <span>Procesar y Cruzar SKUs</span>
+                  <span>Procesar y cruzar SKUs</span>
                 </>
               )}
             </button>
@@ -1130,7 +1104,7 @@ function EditarProformaContent() {
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-body text-gray-900 dark:text-gray-100">
-                    Avance de Regularización de OFs
+                    Avance de regularización de OFs
                   </span>
                   <span
                     className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-micro font-extrabold ${
@@ -1205,7 +1179,7 @@ function EditarProformaContent() {
                     : 'bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10'
                 }`}
               >
-                <span>🚨 Requieren Acción</span>
+                <span>🚨 Requieren acción</span>
                 <span className="w-5 h-5 rounded-full bg-rose-100 dark:bg-rose-500/30 text-rose-800 dark:text-rose-200 text-[10px] flex items-center justify-center">
                   {skusList.filter((s) => s.estadoValidacion === 'Pendiente_IA' || s.estadoValidacion === 'Pendiente_Manual').length}
                 </span>
@@ -1221,7 +1195,7 @@ function EditarProformaContent() {
                 }`}
               >
                 <Bot className="w-3.5 h-3.5" />
-                <span>Sugerencias IA ({skusList.filter((s) => s.tier === 'IA_Web').length})</span>
+                <span>Sugerencias de IA ({skusList.filter((s) => s.tier === 'IA_Web').length})</span>
               </button>
 
               <button
@@ -1234,7 +1208,7 @@ function EditarProformaContent() {
                 }`}
               >
                 <Globe className="w-3.5 h-3.5" />
-                <span>Búsqueda Manual ({skusList.filter((s) => s.tier === 'Manual_Requerido').length})</span>
+                <span>Búsqueda manual ({skusList.filter((s) => s.tier === 'Manual_Requerido').length})</span>
               </button>
 
               <button
@@ -1269,12 +1243,12 @@ function EditarProformaContent() {
               <table className="w-full text-left text-body">
                 <thead className="bg-purple-50/40 dark:bg-white/5 border-b border-purple-900/10 dark:border-white/10 text-gray-600 dark:text-gray-400 font-semibold uppercase tracking-wider text-micro">
                   <tr>
-                    <th className="py-3.5 px-5">SKU & Descripción</th>
-                    <th className="py-3.5 px-5">OFs Afectadas</th>
-                    <th className="py-3.5 px-5">Declarado por Cliente</th>
-                    <th className="py-3.5 px-5">Sugerencia Medidas</th>
+                    <th className="py-3.5 px-5">SKU y descripción</th>
+                    <th className="py-3.5 px-5">OFs afectadas</th>
+                    <th className="py-3.5 px-5">Declarado por cliente</th>
+                    <th className="py-3.5 px-5">Sugerencia de medidas</th>
                     <th className="py-3.5 px-5">Estado</th>
-                    <th className="py-3.5 px-5 text-right">Acción Requerida</th>
+                    <th className="py-3.5 px-5 text-right">Acción requerida</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-white/5">
@@ -1527,7 +1501,7 @@ function EditarProformaContent() {
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-purple-900/10 dark:border-white/10 p-6 shadow-sm space-y-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-gray-100 dark:border-white/10">
             <div>
-              <span className="text-caption text-gray-500 font-medium">Monto Original Facturado:</span>
+              <span className="text-caption text-gray-500 font-medium">Monto original facturado:</span>
               <p className="text-xl font-bold text-gray-400 line-through">
                 {formatCurrency(montoOriginal)}
               </p>
@@ -1535,7 +1509,7 @@ function EditarProformaContent() {
 
             <div className="text-right">
               <span className="text-caption text-purple-700 dark:text-purple-400 font-bold block">
-                NUEVO MONTO REGULARIZADO STARKEN:
+                Nuevo monto regularizado Starken:
               </span>
               <p className="text-3xl font-extrabold text-gray-900 dark:text-gray-100">
                 {formatCurrency(montoAjustado)}
@@ -1550,7 +1524,7 @@ function EditarProformaContent() {
               className="w-full sm:w-auto px-5 py-3 bg-white dark:bg-slate-700 border border-purple-200 dark:border-white/10 hover:bg-purple-50 text-purple-700 dark:text-purple-300 rounded-xl text-body font-bold transition-all shadow-2xs inline-flex items-center justify-center gap-2 cursor-pointer"
             >
               <Download className="w-4 h-4" />
-              <span>Descargar Nueva Proforma (.xlsx)</span>
+              <span>Descargar nueva proforma (.xlsx)</span>
             </button>
 
             <button

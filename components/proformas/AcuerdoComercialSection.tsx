@@ -51,7 +51,7 @@ export const AcuerdoComercialSection: React.FC<AcuerdoComercialSectionProps> = (
               Modificado
             </span>
           ) : (
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-100 dark:bg-purple-500/10 text-purple-800 dark:text-purple-400 border border-purple-200 dark:border-white/10">
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${theme.badgeBg}`}>
               Precargado del Cliente
             </span>
           )}
@@ -85,7 +85,7 @@ export const AcuerdoComercialSection: React.FC<AcuerdoComercialSectionProps> = (
           <button
             type="button"
             onClick={onToggleEditAcuerdo}
-            className="text-xs font-bold text-purple-700 dark:text-purple-400 underline hover:text-purple-950 dark:hover:text-purple-300 transition-colors py-0.5 px-1.5 rounded hover:bg-purple-50 dark:hover:bg-white/5"
+            className={`text-xs font-bold ${theme.accentText} underline hover:opacity-80 transition-colors py-0.5 px-1.5 rounded`}
           >
             {isAcuerdoEditado ? 'Restablecer precargado' : 'Modificar tipo de acuerdo'}
           </button>

@@ -607,7 +607,7 @@ export default function NuevaProformaPage() {
     <div className="max-w-[1560px] mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-h1 font-bold text-gray-900 dark:text-gray-100">Crear Nueva Proforma</h1>
+        <h1 className="text-h1 font-bold text-gray-900 dark:text-gray-100">Crear nueva proforma</h1>
         <p className="text-caption text-gray-600 dark:text-gray-400">
           Asistente guiado por pasos para generar proformas comerciales de facturación especial.
         </p>
@@ -629,7 +629,7 @@ export default function NuevaProformaPage() {
             >
               <label className="block text-eyebrow font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                 <Search className={`w-4 h-4 ${theme.accentText}`} />
-                Buscar Cliente por RUT o Razón Social
+                Buscar cliente por RUT o razón social
               </label>
 
               <div className="relative">
@@ -654,17 +654,25 @@ export default function NuevaProformaPage() {
                         key={c.rut}
                         type="button"
                         onClick={() => handleSelectCliente(c)}
-                        className="w-full text-left p-3 hover:bg-purple-50/80 transition-colors flex items-center justify-between group"
+                        className="w-full text-left p-3 hover:bg-purple-50/80 dark:hover:bg-white/10 transition-colors flex items-center justify-between group"
                       >
                         <div className="flex flex-col">
-                          <span className="text-body font-bold text-gray-900 dark:text-gray-100 group-hover:text-purple-700">
+                          <span className={`text-body font-bold text-gray-900 dark:text-gray-100 group-hover:${theme.accentText}`}>
                             {c.razonSocial}
                           </span>
                           <span className="text-caption text-gray-600 dark:text-gray-400 font-mono">
                             RUT: {c.rutFormateado} · Cuentas Corrientes: {c.cuentasCorrientes.length}
                           </span>
                         </div>
-                        <span className="text-micro font-semibold bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 px-2 py-0.5 rounded group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                        <span
+                          className={`text-micro font-bold px-2.5 py-0.5 rounded transition-all border ${
+                            theme.id === 'mocha'
+                              ? 'bg-amber-100/90 text-amber-950 border-amber-300/80 group-hover:!bg-amber-900 group-hover:!text-white group-hover:!border-amber-900 shadow-xs'
+                              : theme.id === 'dark'
+                              ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/30 group-hover:!bg-emerald-500 group-hover:!text-slate-950 group-hover:!border-emerald-500 shadow-xs'
+                              : 'bg-purple-100 text-purple-800 border-purple-200 group-hover:!bg-purple-600 group-hover:!text-white group-hover:!border-purple-600 shadow-xs'
+                          }`}
+                        >
                           Seleccionar
                         </span>
                       </button>
@@ -684,7 +692,7 @@ export default function NuevaProformaPage() {
                   <div className="flex items-center gap-2">
                     <UserCheck className={`w-4 h-4 ${theme.accentText} shrink-0`} />
                     <span>
-                      Cliente Seleccionado: <strong className="text-purple-900 dark:text-purple-300">{selectedCliente.razonSocial}</strong> ({selectedCliente.rutFormateado})
+                      Cliente seleccionado: <strong className={theme.accentText}>{selectedCliente.razonSocial}</strong> ({selectedCliente.rutFormateado})
                     </span>
                   </div>
                   <button
@@ -695,9 +703,9 @@ export default function NuevaProformaPage() {
                       setRazonSocial('');
                       setRut('');
                     }}
-                    className="text-caption font-semibold text-purple-700 dark:text-purple-400 underline hover:text-purple-900 dark:hover:text-purple-300"
+                    className={`text-caption font-semibold ${theme.accentText} underline hover:opacity-80`}
                   >
-                    Cambiar Cliente
+                    Cambiar cliente
                   </button>
                 </div>
               )}
@@ -717,7 +725,7 @@ export default function NuevaProformaPage() {
                   <div className="flex items-center gap-2">
                     <CreditCard className={`w-4 h-4 ${theme.accentText}`} />
                     <h2 className="text-eyebrow font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
-                      Selecciona las Cuentas Corrientes Asociadas
+                      Selecciona las cuentas corrientes asociadas
                     </h2>
                   </div>
                 </div>
@@ -730,7 +738,7 @@ export default function NuevaProformaPage() {
                     className="flex items-center gap-3 font-bold text-purple-900 dark:text-purple-300 hover:text-purple-700 dark:hover:text-purple-200 transition-colors select-none"
                   >
                     <div
-                      className={`w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0 ${isAllSelected ? 'bg-purple-600 border-purple-600 text-white' : 'border-gray-300 dark:border-white/20 bg-white dark:bg-slate-900/50'
+                      className={`w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0 ${isAllSelected ? `${theme.checkboxBg} text-white` : 'border-gray-300 dark:border-white/20 bg-white dark:bg-slate-900/50'
                         }`}
                     >
                       {isAllSelected && <Check className="w-3 h-3 stroke-[3]" />}
@@ -739,7 +747,7 @@ export default function NuevaProformaPage() {
                       {isAllSelected ? 'Desseleccionar todas las cuentas' : `Seleccionar todas (${selectedCliente.cuentasCorrientes.length})`}
                     </span>
                   </button>
-                  <span className="text-body text-purple-950 dark:text-purple-200 font-bold">
+                  <span className={`text-body ${theme.accentText} font-bold`}>
                     {selectedCuentas.length} de {selectedCliente.cuentasCorrientes.length} seleccionadas
                   </span>
                 </div>
@@ -760,13 +768,13 @@ export default function NuevaProformaPage() {
                       >
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                           <div
-                            className={`w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0 ${isSelected ? 'bg-purple-600 border-purple-600 text-white' : 'border-gray-300 dark:border-white/20 bg-white dark:bg-slate-900/50'
+                            className={`w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0 ${isSelected ? `${theme.checkboxBg} text-white` : 'border-gray-300 dark:border-white/20 bg-white dark:bg-slate-900/50'
                               }`}
                           >
                             {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                           </div>
 
-                          <span className="inline-flex items-center text-micro font-extrabold font-mono text-purple-700 bg-purple-100/90 px-2 py-0.5 rounded shrink-0">
+                          <span className={`inline-flex items-center text-micro font-extrabold font-mono ${theme.badgeBg} px-2 py-0.5 rounded shrink-0`}>
                             {cta.id}
                           </span>
                           <span className="text-body font-bold text-gray-900 dark:text-gray-100 truncate min-w-0" title={cta.nombre}>
@@ -796,7 +804,7 @@ export default function NuevaProformaPage() {
                   <div className="flex items-center gap-2">
                     <Calendar className={`w-4 h-4 ${theme.accentText}`} />
                     <h2 className="text-eyebrow font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
-                      Período de Consulta & Cálculo de Órdenes de Flete (OFs)
+                      Período de consulta y cálculo de órdenes de flete (OFs)
                     </h2>
                   </div>
                   <div className="flex items-center gap-1.5 text-caption text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-white/5 px-2.5 py-1 rounded border border-gray-200/60 dark:border-white/10 font-medium">
@@ -808,19 +816,19 @@ export default function NuevaProformaPage() {
                 {/* Preset Buttons */}
                 <div className="space-y-2">
                   <label className="block text-eyebrow font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                    Seleccionar Rango de Período
+                    Seleccionar rango de período
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <button
                       type="button"
                       onClick={() => handlePeriodPreset('mes_anterior')}
                       className={`p-3.5 rounded-lg border text-left transition-all flex flex-col justify-between ${filtroPeriodo === 'mes_anterior'
-                        ? 'bg-purple-50/90 dark:bg-purple-500/15 border-purple-600 dark:border-emerald-400 text-purple-950 dark:text-gray-100 ring-2 ring-purple-600/20 dark:ring-emerald-400/20 shadow-xs'
+                        ? `bg-purple-50/90 dark:bg-purple-500/15 ${theme.accentBorder} ${theme.accentText} dark:text-gray-100 ring-2 ${theme.accentRing} shadow-xs`
                         : 'bg-gray-50/70 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-purple-50/30 dark:hover:bg-white/10 hover:border-purple-200 dark:hover:border-white/20'
                         }`}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-body font-bold">Mes Anterior (Recomendado)</span>
+                        <span className="text-body font-bold">Mes anterior (recomendado)</span>
                         {filtroPeriodo === 'mes_anterior' && <CheckCircle2 className={`w-4 h-4 ${theme.accentText}`} />}
                       </div>
                       <span className="text-caption text-gray-600 dark:text-gray-400 font-medium">01/06/2026 — 30/06/2026</span>
@@ -830,12 +838,12 @@ export default function NuevaProformaPage() {
                       type="button"
                       onClick={() => handlePeriodPreset('mes_actual')}
                       className={`p-3.5 rounded-lg border text-left transition-all flex flex-col justify-between ${filtroPeriodo === 'mes_actual'
-                        ? 'bg-purple-50/90 dark:bg-purple-500/15 border-purple-600 dark:border-emerald-400 text-purple-950 dark:text-gray-100 ring-2 ring-purple-600/20 dark:ring-emerald-400/20 shadow-xs'
+                        ? `bg-purple-50/90 dark:bg-purple-500/15 ${theme.accentBorder} ${theme.accentText} dark:text-gray-100 ring-2 ${theme.accentRing} shadow-xs`
                         : 'bg-gray-50/70 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-purple-50/30 dark:hover:bg-white/10 hover:border-purple-200 dark:hover:border-white/20'
                         }`}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-body font-bold">Mes Actual</span>
+                        <span className="text-body font-bold">Mes actual</span>
                         {filtroPeriodo === 'mes_actual' && <CheckCircle2 className={`w-4 h-4 ${theme.accentText}`} />}
                       </div>
                       <span className="text-caption text-gray-600 dark:text-gray-400 font-medium">01/07/2026 — 20/07/2026</span>
@@ -845,7 +853,7 @@ export default function NuevaProformaPage() {
                       type="button"
                       onClick={() => handlePeriodPreset('personalizado')}
                       className={`p-3.5 rounded-lg border text-left transition-all flex flex-col justify-between ${filtroPeriodo === 'personalizado'
-                        ? 'bg-purple-50/90 dark:bg-purple-500/15 border-purple-600 dark:border-emerald-400 text-purple-950 dark:text-gray-100 ring-2 ring-purple-600/20 dark:ring-emerald-400/20 shadow-xs'
+                        ? `bg-purple-50/90 dark:bg-purple-500/15 ${theme.accentBorder} ${theme.accentText} dark:text-gray-100 ring-2 ${theme.accentRing} shadow-xs`
                         : 'bg-gray-50/70 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:bg-purple-50/30 dark:hover:bg-white/10 hover:border-purple-200 dark:hover:border-white/20'
                         }`}
                     >
@@ -897,7 +905,7 @@ export default function NuevaProformaPage() {
                       <Package className="w-6 h-6" />
                     </div>
                     <div>
-                      <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block">Total OFs Calculadas</span>
+                      <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block">Total de OFs calculadas</span>
                       <span className="text-xl font-extrabold text-gray-900 dark:text-gray-100">{totalOfs.toLocaleString('es-CL')} Órdenes de Flete</span>
                     </div>
                   </div>
@@ -911,7 +919,7 @@ export default function NuevaProformaPage() {
                     className="px-4 h-11 border border-purple-900/20 dark:border-white/10 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 text-body font-semibold rounded-lg hover:bg-purple-50 dark:hover:bg-white/5 transition-colors inline-flex items-center gap-2 shadow-xs cursor-pointer"
                   >
                     <Save className="w-4 h-4 text-gray-500" />
-                    <span>Guardar Borrador</span>
+                    <span>Guardar borrador</span>
                   </button>
 
                   <button
@@ -920,7 +928,7 @@ export default function NuevaProformaPage() {
                     className={`px-6 h-11 bg-gradient-to-r ${theme.buttonGradient} text-white text-body font-bold rounded-lg transition-all inline-flex items-center gap-2 cursor-pointer shadow-md hover:shadow-lg active:scale-[0.99] ${isSubmittingProforma ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <Send className="w-4 h-4" />
-                    <span>{isSubmittingProforma ? 'Creando...' : 'Crear Proforma'}</span>
+                    <span>{isSubmittingProforma ? 'Creando...' : 'Crear proforma'}</span>
                   </button>
                 </div>
               </div>
@@ -936,7 +944,7 @@ export default function NuevaProformaPage() {
               <div className="flex items-center gap-2">
                 <FileCheck2 className={`w-4 h-4 ${theme.accentText}`} />
                 <h3 className="text-eyebrow font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
-                  Resumen de Proforma
+                  Resumen de la proforma
                 </h3>
               </div>
             </div>
@@ -945,7 +953,7 @@ export default function NuevaProformaPage() {
             <div className="space-y-2 border-b border-gray-100 dark:border-white/10 pb-3">
               <div className="flex items-center justify-between">
                 <span className="text-eyebrow font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1">
-                  Cliente & Cuentas
+                  Cliente y cuentas
                 </span>
                 {selectedCliente && selectedCuentas.length > 0 ? (
                   <span className="text-micro text-emerald-600 font-bold flex items-center gap-0.5">
@@ -962,10 +970,10 @@ export default function NuevaProformaPage() {
               {selectedCliente ? (
                 <div className="p-3 bg-purple-50/60 dark:bg-purple-500/10 border border-purple-100 dark:border-white/10 rounded-lg space-y-1.5 text-xs">
                   <p className="font-bold text-gray-900 dark:text-gray-100 leading-snug">{selectedCliente.razonSocial}</p>
-                  <p className="text-[14px] font-extrabold font-mono text-purple-900 dark:text-purple-300">{selectedCliente.rutFormateado}</p>
+                  <p className={`text-[14px] font-extrabold font-mono ${theme.accentText}`}>{selectedCliente.rutFormateado}</p>
                   <div className="pt-1.5 border-t border-purple-100 dark:border-white/10 flex items-center justify-between text-xs">
                     <span className="text-gray-600 dark:text-gray-400 font-medium">Cuentas elegidas:</span>
-                    <span className="font-bold text-purple-900 dark:text-purple-300">
+                    <span className={`font-bold ${theme.accentText}`}>
                       {selectedCuentas.length} de {selectedCliente.cuentasCorrientes.length}
                     </span>
                   </div>
@@ -984,7 +992,7 @@ export default function NuevaProformaPage() {
             <div className="space-y-2 border-b border-gray-100 dark:border-white/10 pb-3">
               <div className="flex items-center justify-between">
                 <span className="text-eyebrow font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1">
-                  Período & OFs
+                  Período y OFs
                 </span>
                 {selectedCliente ? (
                   <span className="text-micro text-emerald-600 font-bold flex items-center gap-0.5">
@@ -1008,10 +1016,10 @@ export default function NuevaProformaPage() {
                   </div>
                   <div className="flex items-center justify-between pt-1 border-t border-gray-200/60">
                     <span className="text-gray-600 dark:text-gray-400 text-caption">Órdenes (OFs):</span>
-                    <span className="font-extrabold text-purple-900 dark:text-purple-300">{totalOfs.toLocaleString('es-CL')} OFs</span>
+                    <span className={`font-extrabold ${theme.accentText}`}>{totalOfs.toLocaleString('es-CL')} OFs</span>
                   </div>
                   {aliasProforma && (
-                    <p className="text-caption text-purple-800 dark:text-purple-300 font-semibold bg-purple-100/60 dark:bg-purple-500/10 px-2.5 py-0.5 rounded-full truncate">
+                    <p className={`text-caption ${theme.accentText} font-semibold bg-purple-100/60 dark:bg-purple-500/10 px-2.5 py-0.5 rounded-full truncate`}>
                       Alias: {aliasProforma}
                     </p>
                   )}
@@ -1025,7 +1033,7 @@ export default function NuevaProformaPage() {
             <div className="p-3.5 bg-purple-50/60 dark:bg-purple-500/10 border border-purple-100/90 dark:border-white/10 rounded-xl space-y-2 shadow-2xs">
               <div className="flex items-center justify-between">
                 <span className="text-eyebrow font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider block">
-                  Monto Final Estimado
+                  Monto final estimado
                 </span>
               </div>
 
@@ -1037,7 +1045,7 @@ export default function NuevaProformaPage() {
                   </div>
 
                   {tieneCargaValoradaCliente && aplicaCargaValorada === 'SI' && (
-                    <div className="flex items-center justify-between text-purple-900 dark:text-purple-300 font-bold">
+                    <div className={`flex items-center justify-between ${theme.accentText} font-bold`}>
                       <span>Carga Valorada ({montoCargaValoradaUf} UF):</span>
                       <span>+{formatCurrency(montoCargaValoradaClp)}</span>
                     </div>
@@ -1072,10 +1080,10 @@ export default function NuevaProformaPage() {
                 <div className="flex items-center gap-2">
                   <FileText className={`w-4 h-4 ${theme.accentText}`} />
                   <h3 className="text-eyebrow font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
-                    Condiciones Generales del Cliente
+                    Condiciones generales del cliente
                   </h3>
                 </div>
-                <span className="text-micro font-medium px-2.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-500/10 text-purple-800 dark:text-purple-400 border border-purple-200 dark:border-white/10">
+                <span className={`text-micro font-medium px-2.5 py-0.5 rounded-full ${theme.badgeBg}`}>
                   Acuerdo comercial
                 </span>
               </div>

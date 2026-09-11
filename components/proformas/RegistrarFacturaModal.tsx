@@ -121,10 +121,10 @@ export function RegistrarFacturaModal({
             </div>
             <div>
               <span className="text-[11px] font-bold tracking-wider uppercase text-purple-200 block">
-                Cierre del Ciclo Comercial
+                Cierre del ciclo comercial
               </span>
               <h2 className="text-lg font-bold leading-tight">
-                Registrar Factura Emitida
+                Registrar factura emitida
               </h2>
             </div>
           </div>
@@ -142,7 +142,7 @@ export function RegistrarFacturaModal({
             </div>
           </div>
           <div className="text-right">
-            <span className="text-[10px] text-gray-500 uppercase font-semibold block">Monto Facturable</span>
+            <span className="text-[10px] text-gray-500 uppercase font-semibold block">Monto facturable</span>
             <span className="font-mono font-extrabold text-purple-700 dark:text-purple-300 text-sm">
               {proforma.montoFormatted}
             </span>
@@ -161,7 +161,7 @@ export function RegistrarFacturaModal({
           {/* Número de Factura */}
           <div>
             <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">
-              Número de Factura Oficial <span className="text-rose-500">*</span>
+              Número de factura oficial <span className="text-rose-500">*</span>
             </label>
             <div className="relative flex items-center">
               <Hash className="w-4 h-4 absolute left-3 text-gray-400 pointer-events-none" />
