@@ -43,6 +43,7 @@ function DashboardHomeContent() {
   const [proformas, setProformas] = useState<Proforma[]>(MOCK_PROFORMAS);
   const [searchTerm, setSearchTerm] = useState('');
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const [kpiFilter, setKpiFilter] = useState<'todos' | 'pendientes' | 'aprobadas' | 'kam'>('todos');
 
   // Dropdown de cambio de estado en el badge — posicionado con fixed para escapar del overflow
   const [openStatusDropdownId, setOpenStatusDropdownId] = useState<string | null>(null);
@@ -246,11 +247,62 @@ function DashboardHomeContent() {
     };
   }, [openStatusDropdownId]);
 
-  const filteredProformas = proformas.filter(
+  // Conteo de KPIs sincronizado con los filtros
+  const countPendientes = proformas.filter(
     (p) =>
+      p.estado === 'Pendiente' ||
+      p.estado === 'En revisión' ||
+      p.estado === 'Pendiente de validación'
+  ).length;
+
+  const countAprobadas = proformas.filter(
+    (p) =>
+      p.estado === 'Aprobada' ||
+      p.estado === 'Aprobada por Cliente' ||
+      p.estado === 'Facturado'
+  ).length;
+
+  const countKAM = proformas.filter(
+    (p) =>
+      p.estado === 'Derivada a KAM' ||
+      p.estado === 'Derivada a CAM' ||
+      p.estadoComercial === 'Derivada_KAM' ||
+      (p.conteoRechazos || 0) >= 3
+  ).length;
+
+  const filteredProformas = proformas.filter((p) => {
+    // 1. Filtro por texto de búsqueda (N° proforma o cliente)
+    const matchesSearch =
       p.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.cliente.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      p.cliente.toLowerCase().includes(searchTerm.toLowerCase());
+    if (!matchesSearch) return false;
+
+    // 2. Filtro interactivo por KPI seleccionado
+    if (kpiFilter === 'pendientes') {
+      return (
+        p.estado === 'Pendiente' ||
+        p.estado === 'En revisión' ||
+        p.estado === 'Pendiente de validación'
+      );
+    }
+    if (kpiFilter === 'aprobadas') {
+      return (
+        p.estado === 'Aprobada' ||
+        p.estado === 'Aprobada por Cliente' ||
+        p.estado === 'Facturado'
+      );
+    }
+    if (kpiFilter === 'kam') {
+      return (
+        p.estado === 'Derivada a KAM' ||
+        p.estado === 'Derivada a CAM' ||
+        p.estadoComercial === 'Derivada_KAM' ||
+        (p.conteoRechazos || 0) >= 3
+      );
+    }
+
+    return true;
+  });
 
   const handleProformaActualizada = (proformaActualizada: Proforma) => {
     setProformas((prev) =>
@@ -296,17 +348,36 @@ function DashboardHomeContent() {
         </p>
       </div>
 
-      {/* KPI Grid */}
+      {/* KPI Grid interactivo con función de filtro */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* KPI 1: Totales */}
-        <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-purple-900/10 dark:border-white/10 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+        {/* KPI 1: Totales / Todas */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setKpiFilter('todos')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setKpiFilter('todos'); }}
+          title="Haz clic para ver todas las proformas registradas"
+          className={`p-5 rounded-xl border relative overflow-hidden group transition-all cursor-pointer select-none ${
+            kpiFilter === 'todos'
+              ? 'bg-purple-50/70 dark:bg-purple-950/40 border-purple-500 ring-2 ring-purple-500/30 shadow-md scale-[1.01]'
+              : 'bg-white dark:bg-slate-800 border-purple-900/10 dark:border-white/10 hover:border-purple-300 dark:hover:border-purple-600/40 hover:shadow-md'
+          }`}
+        >
           <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+              kpiFilter === 'todos'
+                ? 'bg-purple-600 text-white'
+                : 'bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400'
+            }`}>
               <FileText className="w-5 h-5" />
             </div>
-            <span className="text-micro font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-white/5 px-2 py-0.5 rounded-full">
-              General
+            <span className={`text-micro font-semibold px-2 py-0.5 rounded-full transition-colors flex items-center gap-1 ${
+              kpiFilter === 'todos'
+                ? 'bg-purple-600 text-white font-extrabold shadow-2xs'
+                : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-white/5'
+            }`}>
+              {kpiFilter === 'todos' && <Check className="w-2.5 h-2.5" />}
+              {kpiFilter === 'todos' ? 'Activo' : 'General'}
             </span>
           </div>
           <p className="text-3xl font-extrabold text-gray-900 dark:text-gray-100 leading-none mb-1">
@@ -316,53 +387,146 @@ function DashboardHomeContent() {
         </div>
 
         {/* KPI 2: Pendientes */}
-        <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-purple-900/10 dark:border-white/10 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setKpiFilter((prev) => (prev === 'pendientes' ? 'todos' : 'pendientes'))}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setKpiFilter((prev) => (prev === 'pendientes' ? 'todos' : 'pendientes')); }}
+          title={kpiFilter === 'pendientes' ? 'Haz clic para quitar filtro' : 'Haz clic para filtrar solo pendientes'}
+          className={`p-5 rounded-xl border relative overflow-hidden group transition-all cursor-pointer select-none ${
+            kpiFilter === 'pendientes'
+              ? 'bg-amber-50/80 dark:bg-amber-950/40 border-amber-500 ring-2 ring-amber-500/30 shadow-md scale-[1.01]'
+              : 'bg-white dark:bg-slate-800 border-purple-900/10 dark:border-white/10 hover:border-amber-300 dark:hover:border-amber-600/40 hover:shadow-md'
+          }`}
+        >
           <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+              kpiFilter === 'pendientes'
+                ? 'bg-amber-600 text-white'
+                : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400'
+            }`}>
               <Hourglass className="w-5 h-5" />
             </div>
-            <span className="text-micro font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded-full">
-              En espera
+            <span className={`text-micro font-semibold px-2 py-0.5 rounded-full transition-colors flex items-center gap-1 ${
+              kpiFilter === 'pendientes'
+                ? 'bg-amber-600 text-white font-extrabold shadow-2xs'
+                : 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10'
+            }`}>
+              {kpiFilter === 'pendientes' && <Check className="w-2.5 h-2.5" />}
+              {kpiFilter === 'pendientes' ? 'Filtrando' : 'En espera'}
             </span>
           </div>
           <p className="text-3xl font-extrabold text-amber-600 dark:text-amber-400 leading-none mb-1">
-            {proformas.filter((p) => p.estado === 'Pendiente' || p.estado === 'En revisión').length}
+            {countPendientes}
           </p>
           <p className="text-caption text-gray-600 dark:text-gray-400 font-medium">Pendientes de respuesta</p>
         </div>
 
         {/* KPI 3: Aprobadas */}
-        <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-purple-900/10 dark:border-white/10 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setKpiFilter((prev) => (prev === 'aprobadas' ? 'todos' : 'aprobadas'))}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setKpiFilter((prev) => (prev === 'aprobadas' ? 'todos' : 'aprobadas')); }}
+          title={kpiFilter === 'aprobadas' ? 'Haz clic para quitar filtro' : 'Haz clic para filtrar solo aprobadas'}
+          className={`p-5 rounded-xl border relative overflow-hidden group transition-all cursor-pointer select-none ${
+            kpiFilter === 'aprobadas'
+              ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-500 ring-2 ring-emerald-500/30 shadow-md scale-[1.01]'
+              : 'bg-white dark:bg-slate-800 border-purple-900/10 dark:border-white/10 hover:border-emerald-300 dark:hover:border-emerald-600/40 hover:shadow-md'
+          }`}
+        >
           <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+              kpiFilter === 'aprobadas'
+                ? 'bg-emerald-600 text-white'
+                : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+            }`}>
               <CheckCircle2 className="w-5 h-5" />
             </div>
-            <span className="text-micro font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full">
-              Listas
+            <span className={`text-micro font-semibold px-2 py-0.5 rounded-full transition-colors flex items-center gap-1 ${
+              kpiFilter === 'aprobadas'
+                ? 'bg-emerald-600 text-white font-extrabold shadow-2xs'
+                : 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10'
+            }`}>
+              {kpiFilter === 'aprobadas' && <Check className="w-2.5 h-2.5" />}
+              {kpiFilter === 'aprobadas' ? 'Filtrando' : 'Listas'}
             </span>
           </div>
           <p className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 leading-none mb-1">
-            {proformas.filter((p) => p.estado === 'Aprobada' || p.estado === 'Aprobada por Cliente').length}
+            {countAprobadas}
           </p>
           <p className="text-caption text-gray-600 dark:text-gray-400 font-medium">Aprobadas por clientes</p>
         </div>
 
-        {/* KPI 4: KAM / Rechazadas */}
-        <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-purple-900/10 dark:border-white/10 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+        {/* KPI 4: KAM / Escaladas */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setKpiFilter((prev) => (prev === 'kam' ? 'todos' : 'kam'))}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setKpiFilter((prev) => (prev === 'kam' ? 'todos' : 'kam')); }}
+          title={kpiFilter === 'kam' ? 'Haz clic para quitar filtro' : 'Haz clic para filtrar solo derivadas al KAM'}
+          className={`p-5 rounded-xl border relative overflow-hidden group transition-all cursor-pointer select-none ${
+            kpiFilter === 'kam'
+              ? 'bg-rose-50/80 dark:bg-rose-950/40 border-rose-500 ring-2 ring-rose-500/30 shadow-md scale-[1.01]'
+              : 'bg-white dark:bg-slate-800 border-purple-900/10 dark:border-white/10 hover:border-rose-300 dark:hover:border-rose-600/40 hover:shadow-md'
+          }`}
+        >
           <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+              kpiFilter === 'kam'
+                ? 'bg-rose-600 text-white'
+                : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400'
+            }`}>
               <ShieldAlert className="w-5 h-5" />
             </div>
-            <span className="text-micro font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 px-2 py-0.5 rounded-full">
-              Escaladas
+            <span className={`text-micro font-semibold px-2 py-0.5 rounded-full transition-colors flex items-center gap-1 ${
+              kpiFilter === 'kam'
+                ? 'bg-rose-600 text-white font-extrabold shadow-2xs'
+                : 'text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10'
+            }`}>
+              {kpiFilter === 'kam' && <Check className="w-2.5 h-2.5" />}
+              {kpiFilter === 'kam' ? 'Filtrando' : 'Escaladas'}
             </span>
           </div>
           <p className="text-3xl font-extrabold text-rose-600 dark:text-rose-400 leading-none mb-1">
-            {proformas.filter((p) => p.estado === 'Derivada a KAM' || p.estado === 'Derivada a CAM' || p.estadoComercial === 'Derivada_KAM' || (p.conteoRechazos || 0) >= 3).length}
+            {countKAM}
           </p>
           <p className="text-caption text-gray-600 dark:text-gray-400 font-medium">Derivadas al KAM (3 rechazos / V3)</p>
         </div>
       </div>
+
+      {/* Barra de Filtro de KPI Activo (aparece si no está en 'todos') */}
+      {kpiFilter !== 'todos' && (
+        <div className="flex items-center justify-between gap-3 p-3 px-4 bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/40 rounded-xl shadow-2xs text-caption animate-in fade-in duration-150">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-gray-600 dark:text-gray-300 font-medium">Filtro de KPI aplicado:</span>
+            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-micro font-extrabold text-white shadow-2xs ${
+              kpiFilter === 'pendientes'
+                ? 'bg-amber-600'
+                : kpiFilter === 'aprobadas'
+                ? 'bg-emerald-600'
+                : 'bg-rose-600'
+            }`}>
+              {kpiFilter === 'pendientes'
+                ? '⏳ Pendientes de respuesta'
+                : kpiFilter === 'aprobadas'
+                ? '✅ Aprobadas por clientes'
+                : '🛡️ Derivadas al KAM (V3)'}
+            </span>
+            <span className="text-micro text-gray-500 dark:text-gray-400 font-semibold">
+              ({filteredProformas.length} de {proformas.length} proformas)
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setKpiFilter('todos')}
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-micro font-bold text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/40 rounded-lg transition-colors cursor-pointer"
+          >
+            <XCircle className="w-3.5 h-3.5" />
+            <span>Mostrar todas ({proformas.length})</span>
+          </button>
+        </div>
+      )}
 
       {/* Tabla de Proformas */}
       <div className="bg-white dark:bg-slate-800 border border-purple-900/10 dark:border-white/10 rounded-xl shadow-sm overflow-hidden">
@@ -952,6 +1116,38 @@ function DashboardHomeContent() {
                   </React.Fragment>
                 );
               })}
+
+              {filteredProformas.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="py-14 text-center text-gray-500 dark:text-gray-400">
+                    <div className="flex flex-col items-center justify-center gap-2 max-w-sm mx-auto">
+                      <div className="w-12 h-12 rounded-full bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-1">
+                        <Search className="w-6 h-6" />
+                      </div>
+                      <p className="text-body font-bold text-gray-800 dark:text-gray-200">
+                        No se encontraron proformas
+                      </p>
+                      <p className="text-caption text-gray-500 dark:text-gray-400">
+                        {kpiFilter !== 'todos'
+                          ? 'No hay registros en la categoría seleccionada o para el término buscado.'
+                          : 'Prueba buscando con otro RUT, nombre de cliente o número de proforma.'}
+                      </p>
+                      {(kpiFilter !== 'todos' || searchTerm) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setKpiFilter('todos');
+                            setSearchTerm('');
+                          }}
+                          className="mt-2 px-3.5 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 rounded-lg text-micro font-extrabold transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                        >
+                          Mostrar todas las proformas ({proformas.length})
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
