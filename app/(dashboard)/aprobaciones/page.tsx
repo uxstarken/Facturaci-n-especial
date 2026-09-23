@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import Link from 'next/link';
 import {
   CheckSquare,
   Search,
@@ -15,943 +16,799 @@ import {
   Sparkles,
   RotateCcw,
   AlertTriangle,
+  Layers,
+  ArrowRight,
+  GitCompare,
+  User,
+  Building2,
+  Calendar,
+  DollarSign,
+  ShieldCheck,
+  MessageSquare,
+  Eye,
+  Info,
+  SlidersHorizontal,
 } from 'lucide-react';
-import { useTheme } from '@/context/theme-context';
+import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/context/toast-context';
-import { formatCurrency, getInitials } from '@/lib/utils';
+import { MOCK_PROFORMAS, MOCK_AUDIT, MOCK_EXECUTIVES } from '@/lib/mock-data';
+import { Proforma } from '@/lib/types';
+import { formatCurrency } from '@/lib/utils';
 
-export interface SolicitudAprobacion {
-  id: string;
-  analista: {
-    nombre: string;
-    email: string;
-    rol: string;
-  };
-  cliente: {
-    razonSocial: string;
-    rutFormateado: string;
-    cuentas: string;
-  };
-  fechaSolicitud: string;
-  montoNeto: number;
-  totalOfs: number;
-  ofsObservadas: number;
-  estado: 'Pendiente' | 'Autorizada' | 'Rechazada';
-  condiciones: {
-    cargaValorada: string;
-    consolidado: string;
-    descuento: string;
-  };
-  observacionesAnalista: string;
-  motivoRechazo?: string;
-}
-
-const MOCK_SOLICITUDES_INICIALES: SolicitudAprobacion[] = [
-  {
-    id: 'PF-2026-0150',
-    analista: {
-      nombre: 'Rodrigo Morales',
-      email: 'rodrigo.morales@starken.cl',
-      rol: 'Analista Sénior FE',
-    },
-    cliente: {
-      razonSocial: 'Falabella Retail S.A.',
-      rutFormateado: '76.123.456-7',
-      cuentas: 'CTA-9021 (Retail) | CTA-9022 (E-commerce)',
-    },
-    fechaSolicitud: '20/08/2026 09:45',
-    montoNeto: 14500900,
-    totalOfs: 1420,
-    ofsObservadas: 18,
-    estado: 'Pendiente',
-    condiciones: {
-      cargaValorada: '1.2% del declarado',
-      consolidado: 'Tramo 1,000+ envíos (Frecuencia semanal)',
-      descuento: '15% Descuento Volumen E-commerce',
-    },
-    observacionesAnalista:
-      'Se aplicó regularización por re-cubitaje en 18 OFs con discrepancias de volumen. Cliente aceptó ajuste de tarifa negociada para entregas nocturnas.',
-  },
-  {
-    id: 'PF-2026-0148',
-    analista: {
-      nombre: 'Camila Sepúlveda',
-      email: 'camila.sepulveda@starken.cl',
-      rol: 'Analista de Tarificaciones',
-    },
-    cliente: {
-      razonSocial: 'Ripley Chile S.A.',
-      rutFormateado: '89.432.100-K',
-      cuentas: 'CTA-4410 (Corporativo)',
-    },
-    fechaSolicitud: '20/08/2026 09:10',
-    montoNeto: 8920400,
-    totalOfs: 850,
-    ofsObservadas: 5,
-    estado: 'Pendiente',
-    condiciones: {
-      cargaValorada: '1.5% estándar',
-      consolidado: 'Sin consolidado especial',
-      descuento: '10% Cliente Preferente',
-    },
-    observacionesAnalista:
-      'Proforma generada según acuerdo comercial marco Q3. Se regularizaron 5 OFs sin registro previo de peso en balanza.',
-  },
-  {
-    id: 'PF-2026-0145',
-    analista: {
-      nombre: 'Gonzalo Henríquez',
-      email: 'gonzalo.henriquez@starken.cl',
-      rol: 'Analista Operaciones FE',
-    },
-    cliente: {
-      razonSocial: 'Cencosud Shopping Centers',
-      rutFormateado: '96.888.770-3',
-      cuentas: 'CTA-8801 (Mall Costanera) | CTA-8802 (Jumbo)',
-    },
-    fechaSolicitud: '19/08/2026 17:30',
-    montoNeto: 23150000,
-    totalOfs: 2300,
-    ofsObservadas: 42,
-    estado: 'Pendiente',
-    condiciones: {
-      cargaValorada: '0.9% Especial Gran Volumen',
-      consolidado: 'Consolidación Diaria Automatizada',
-      descuento: '18% Descuento Especial Subgerencia',
-    },
-    observacionesAnalista:
-      'Ajuste por sobrecargas en pallets no estandarizados. Requiere aprobación de subgerencia por superar los 20M de pesos netos.',
-  },
-  {
-    id: 'PF-2026-0139',
-    analista: {
-      nombre: 'Rodrigo Morales',
-      email: 'rodrigo.morales@starken.cl',
-      rol: 'Analista Sénior FE',
-    },
-    cliente: {
-      razonSocial: 'Sodimac S.A.',
-      rutFormateado: '96.792.000-8',
-      cuentas: 'CTA-3011 (Constructor) | CTA-3012 (Hogar)',
-    },
-    fechaSolicitud: '19/08/2026 11:20',
-    montoNeto: 12400000,
-    totalOfs: 1100,
-    ofsObservadas: 8,
-    estado: 'Autorizada',
-    condiciones: {
-      cargaValorada: '1.0% Carga Pesada',
-      consolidado: 'Consolidación Semanal Directa',
-      descuento: '12% Convenio Marco',
-    },
-    observacionesAnalista:
-      'Proforma revisada y aprobada por el supervisor previa facturación mensual de agosto.',
-  },
-  {
-    id: 'PF-2026-0135',
-    analista: {
-      nombre: 'Camila Sepúlveda',
-      email: 'camila.sepulveda@starken.cl',
-      rol: 'Analista de Tarificaciones',
-    },
-    cliente: {
-      razonSocial: 'Easy Retail Chile',
-      rutFormateado: '77.200.400-1',
-      cuentas: 'CTA-5501 (Distribución Regional)',
-    },
-    fechaSolicitud: '18/08/2026 16:40',
-    montoNeto: 6750000,
-    totalOfs: 620,
-    ofsObservadas: 2,
-    estado: 'Autorizada',
-    condiciones: {
-      cargaValorada: '1.4% estándar',
-      consolidado: 'Consolidado Bi-semanal',
-      descuento: '8% Preferencial',
-    },
-    observacionesAnalista:
-      'Tarifas y descuentos validados conforme al contrato vigente.',
-  },
-  {
-    id: 'PF-2026-0130',
-    analista: {
-      nombre: 'Valeria Orellana',
-      email: 'valeria.orellana@starken.cl',
-      rol: 'Analista Júnior FE',
-    },
-    cliente: {
-      razonSocial: 'Unimarc Logística',
-      rutFormateado: '81.500.300-5',
-      cuentas: 'CTA-7710 (Supermercados)',
-    },
-    fechaSolicitud: '18/08/2026 14:05',
-    montoNeto: 3120000,
-    totalOfs: 290,
-    ofsObservadas: 14,
-    estado: 'Rechazada',
-    condiciones: {
-      cargaValorada: '1.5% estándar',
-      consolidado: 'Sin consolidado',
-      descuento: '5% Inicial',
-    },
-    observacionesAnalista:
-      'Solicitud rechazada por discrepancias en medidas de SKUs no documentadas.',
-    motivoRechazo: 'Diferencia en recubitaje / medidas de SKUs',
-  },
-];
-
-const MOTIVOS_RECHAZO_PREDETERMINADOS = [
-  'Inconsistencia en Tarifas / Descuentos negociados',
-  'Diferencia en recubitaje / medidas de SKUs',
-];
+type FilterTab = 'pendientes' | 'autorizadas' | 'devueltas' | 'todas';
 
 export default function AprobacionesPage() {
-  const { theme } = useTheme();
+  const { user } = useAuth();
   const { showToast } = useToast();
 
-  const [solicitudes, setSolicitudes] = useState<SolicitudAprobacion[]>(MOCK_SOLICITUDES_INICIALES);
-  const [activeTab, setActiveTab] = useState<'Pendiente' | 'Autorizada' | 'Rechazada'>('Pendiente');
+  const [proformas, setProformas] = useState<Proforma[]>(MOCK_PROFORMAS);
+  const [activeTab, setActiveTab] = useState<FilterTab>('pendientes');
   const [searchTerm, setSearchTerm] = useState('');
-  const [expandedId, setExpandedId] = useState<string | null>('PF-2026-0150');
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [executiveFilter, setExecutiveFilter] = useState('todos');
 
-  // State para modales de Autorización y Rechazo
-  const [selectedSolicitud, setSelectedSolicitud] = useState<SolicitudAprobacion | null>(null);
-  const [showAutorizarModal, setShowAutorizarModal] = useState(false);
-  const [showRechazarModal, setShowRechazarModal] = useState(false);
-  const [motivoRechazoSelect, setMotivoRechazoSelect] = useState(MOTIVOS_RECHAZO_PREDETERMINADOS[0]);
-  const [motivoSelectOpen, setMotivoSelectOpen] = useState(false);
+  // Modal de Comparador de Versiones (Diff Visual v1 vs v2)
+  const [comparingProforma, setComparingProforma] = useState<Proforma | null>(null);
 
-  // Toggle expansión de detalle
-  const toggleExpand = (id: string) => {
-    setExpandedId((prev) => (prev === id ? null : id));
-  };
+  // Modal para Devolver / Rechazar versión V2 con motivo
+  const [rejectingProforma, setRejectingProforma] = useState<Proforma | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('Inconsistencia en Tarifas / Descuentos');
+  const [rejectionObservations, setRejectionObservations] = useState('');
 
-  // Conteo de items por estado
-  const pendientesCount = solicitudes.filter((s) => s.estado === 'Pendiente').length;
-  const autorizadasCount = solicitudes.filter((s) => s.estado === 'Autorizada').length;
-  const rechazadasCount = solicitudes.filter((s) => s.estado === 'Rechazada').length;
+  // Proformas que tienen version 2 o requieren supervisión
+  const filteredProformas = useMemo(() => {
+    return proformas.filter((p) => {
+      const isPending = p.estadoSupervision === 'Pendiente_Autorizacion' || p.estado === 'Pendiente de validación';
+      const isAuthorized = p.estadoSupervision === 'Autorizada' || p.estado === 'Aprobada por Cliente' || p.estado === 'Facturado';
+      const isReturned = p.estadoSupervision === 'Devuelta_Analista' || p.estado === 'Derivada a KAM';
 
-  // Filtrado de solicitudes según el Tab Activo y Término de Búsqueda
-  const filteredSolicitudes = solicitudes.filter((s) => {
-    const matchesTab = s.estado === activeTab;
-    const matchesSearch =
-      s.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.cliente.razonSocial.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.cliente.rutFormateado.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.analista.nombre.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesTab && matchesSearch;
-  });
+      if (activeTab === 'pendientes' && !isPending) return false;
+      if (activeTab === 'autorizadas' && !isAuthorized) return false;
+      if (activeTab === 'devueltas' && !isReturned) return false;
 
-  // Descargar proforma simulada
-  const handleDownloadProforma = (solicitud: SolicitudAprobacion) => {
-    showToast(`Descargando detalle en Excel para la proforma ${solicitud.id}...`, 'info');
-    setTimeout(() => {
-      const csvContent =
-        'data:text/csv;charset=utf-8,' +
-        `Proforma,Cliente,Analista,MontoNeto,Fecha,Estado\n` +
-        `"${solicitud.id}","${solicitud.cliente.razonSocial}","${solicitud.analista.nombre}","${solicitud.montoNeto}","${solicitud.fechaSolicitud}","${solicitud.estado}"`;
+      if (executiveFilter !== 'todos' && p.ejecutivoId !== executiveFilter) {
+        return false;
+      }
 
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement('a');
-      link.setAttribute('href', encodedUri);
-      link.setAttribute('download', `Proforma_${solicitud.id}_Detalle.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      if (searchTerm.trim()) {
+        const term = searchTerm.toLowerCase();
+        const matchId = p.id.toLowerCase().includes(term);
+        const matchCliente = p.cliente.toLowerCase().includes(term);
+        const matchRut = p.rut.toLowerCase().includes(term);
+        const matchEjecutivo = p.ejecutivoNombre?.toLowerCase().includes(term);
+        return matchId || matchCliente || matchRut || matchEjecutivo;
+      }
 
-      showToast(`Archivo Proforma_${solicitud.id}_Detalle.csv descargado correctamente.`, 'success');
-    }, 600);
-  };
+      return true;
+    });
+  }, [proformas, activeTab, executiveFilter, searchTerm]);
 
-  // Confirmar Autorización
-  const handleConfirmAutorizar = () => {
-    if (!selectedSolicitud) return;
+  // Contadores para badges
+  const pendingCount = useMemo(
+    () => proformas.filter((p) => p.estadoSupervision === 'Pendiente_Autorizacion' || p.estado === 'Pendiente de validación').length,
+    [proformas]
+  );
 
-    setSolicitudes((prev) =>
-      prev.map((s) => (s.id === selectedSolicitud.id ? { ...s, estado: 'Autorizada' } : s))
+  // HANDLER: Aprobar Proforma Versión 2 (V°B° Jefatura)
+  const handleAprobarV2 = (proformaId: string) => {
+    const target = proformas.find((p) => p.id === proformaId);
+    if (!target) return;
+
+    const nowStr = new Date().toLocaleString('es-CL');
+
+    setProformas((prev) =>
+      prev.map((p) => {
+        if (p.id === proformaId) {
+          const hist = p.historialVersiones || [];
+          const updatedHist = hist.map((h, i) =>
+            i === hist.length - 1
+              ? {
+                  ...h,
+                  estadoSupervision: 'Autorizada' as const,
+                  aprobadoPorSupervisor: user?.name || 'Carlos Muñoz (Jefatura)',
+                  fechaSupervision: nowStr,
+                }
+              : h
+          );
+
+          return {
+            ...p,
+            estadoSupervision: 'Autorizada',
+            estado: 'Pendiente', // Lista para reenvío formal al cliente
+            historialVersiones: updatedHist,
+          };
+        }
+        return p;
+      })
     );
 
+    // Registrar evento de auditoría
+    MOCK_AUDIT.unshift({
+      id: `a-${Date.now()}`,
+      ts: nowStr,
+      fechaHora: nowStr,
+      usuario: user?.name || 'Carlos Muñoz',
+      rol: 'Jefatura',
+      accion: 'Aprobación',
+      recurso: proformaId,
+      objetoAfectado: `${target.cliente} (${target.id})`,
+      estadoAnterior: 'Pendiente_Autorizacion (v2)',
+      estadoNuevo: 'Autorizada (V°B° Jefatura concedido)',
+      version: target.versionActual || 'v2',
+      motivoObservaciones: `V°B° concedido por ${user?.name || 'Carlos Muñoz'}. Lista para reenvío y validación comercial del cliente.`,
+      ip: '10.0.2.12',
+    });
+
     showToast(
-      `Proforma ${selectedSolicitud.id} autorizada con éxito y trasladada al panel de Autorizadas.`,
+      `Proforma ${proformaId} (Versión 2) aprobada exitosamente. V°B° concedido para reenvío al cliente.`,
       'success',
       5500,
-      'Proforma Movida a Autorizadas'
+      'V°B° Jefatura Otorgado'
     );
 
-    setShowAutorizarModal(false);
-    setSelectedSolicitud(null);
+    setComparingProforma(null);
   };
 
-  // Confirmar Rechazo
-  const handleConfirmRechazar = () => {
-    if (!selectedSolicitud) return;
+  // HANDLER: Rechazar / Devolver Proforma V2 con Motivo
+  const handleConfirmRechazoV2 = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rejectingProforma) return;
 
-    setSolicitudes((prev) =>
-      prev.map((s) =>
-        s.id === selectedSolicitud.id
-          ? { ...s, estado: 'Rechazada', motivoRechazo: motivoRechazoSelect }
-          : s
-      )
+    const nowStr = new Date().toLocaleString('es-CL');
+    const proformaId = rejectingProforma.id;
+
+    setProformas((prev) =>
+      prev.map((p) => {
+        if (p.id === proformaId) {
+          const hist = p.historialVersiones || [];
+          const updatedHist = hist.map((h, i) =>
+            i === hist.length - 1
+              ? {
+                  ...h,
+                  estadoSupervision: 'Devuelta_Analista' as const,
+                  motivo: rejectionReason,
+                  observaciones: rejectionObservations,
+                  fechaSupervision: nowStr,
+                }
+              : h
+          );
+
+          return {
+            ...p,
+            estadoSupervision: 'Devuelta_Analista',
+            estado: 'Rechazada v2',
+            historialVersiones: updatedHist,
+          };
+        }
+        return p;
+      })
     );
 
+    // Registrar en auditoría
+    MOCK_AUDIT.unshift({
+      id: `a-${Date.now()}`,
+      ts: nowStr,
+      fechaHora: nowStr,
+      usuario: user?.name || 'Carlos Muñoz',
+      rol: 'Jefatura',
+      accion: 'Rechazo',
+      recurso: proformaId,
+      objetoAfectado: `${rejectingProforma.cliente} (${proformaId})`,
+      estadoAnterior: 'Pendiente_Autorizacion (v2)',
+      estadoNuevo: 'Devuelta a Ejecutivo con observaciones',
+      version: rejectingProforma.versionActual || 'v2',
+      motivoObservaciones: `Motivo: ${rejectionReason}. Observaciones: ${rejectionObservations}`,
+      ip: '10.0.2.12',
+    });
+
     showToast(
-      `Proforma ${selectedSolicitud.id} fue rechazada y trasladada al panel de Rechazadas. Motivo: ${motivoRechazoSelect}`,
+      `Proforma ${proformaId} devuelta al ejecutivo (${rejectingProforma.ejecutivoNombre}) para corrección.`,
       'warning',
       6000,
-      'Proforma Movida a Rechazadas'
+      'Proforma Devuelta con Observaciones'
     );
 
-    setShowRechazarModal(false);
-    setMotivoRechazoSelect(MOTIVOS_RECHAZO_PREDETERMINADOS[0]);
-    setSelectedSolicitud(null);
-  };
-
-  // Reabrir proforma (volver a Pendiente)
-  const handleReabrirProforma = (solicitud: SolicitudAprobacion) => {
-    setSolicitudes((prev) =>
-      prev.map((s) => (s.id === solicitud.id ? { ...s, estado: 'Pendiente', motivoRechazo: undefined } : s))
-    );
-
-    showToast(
-      `Proforma ${solicitud.id} reabierta y trasladada nuevamente a Solicitudes Pendientes.`,
-      'info',
-      5000,
-      'Proforma Reabierta'
-    );
+    setRejectingProforma(null);
+    setRejectionReason('Inconsistencia en Tarifas / Descuentos');
+    setRejectionObservations('');
+    setComparingProforma(null);
   };
 
   return (
-    <div className="max-w-[1560px] mx-auto space-y-6 pb-12">
-      {/* Header de la Bandeja */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
+      {/* Encabezado */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/70 dark:bg-slate-900/70 p-5 rounded-2xl border border-purple-100 dark:border-white/10 shadow-xs backdrop-blur-md">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-[26px] font-extrabold text-purple-950 dark:text-purple-100 tracking-tight">
-              Bandeja de Aprobaciones de Proformas
-            </h1>
-            <span className="bg-purple-100 dark:bg-purple-500/20 text-purple-900 dark:text-purple-300 font-bold text-caption px-2.5 py-1 rounded-full border border-purple-200 dark:border-white/10">
-              Módulo Supervisor
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300">
+              Jefatura de Facturación Especial
             </span>
+            <span className="text-xs text-gray-500">• Control de Versiones & V°B°</span>
           </div>
-          <p className="text-body text-gray-500 dark:text-gray-400 mt-1">
-            Haz clic en las tarjetas de estado para filtrar las proformas pendientes, autorizadas o rechazadas.
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2.5">
+            <CheckSquare className="w-7 h-7 text-purple-600 dark:text-purple-400" />
+            Aprobación / Rechazo de Proformas y Control de Versiones
+          </h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
+            Supervisa las proformas re-emitidas tras rechazo del cliente (Versión 2+), contrasta cambios y emite V°B° de jefatura.
           </p>
         </div>
+
+        {/* Resumen Superior */}
+        <div className="flex items-center gap-3">
+          <div className="text-right px-4 py-2 bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 rounded-xl">
+            <div className="text-[11px] font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider">
+              Pendientes V°B° (v2)
+            </div>
+            <div className="text-xl font-black text-amber-700 dark:text-amber-300">
+              {pendingCount}
+            </div>
+          </div>
+          <div className="text-right px-4 py-2 bg-purple-50/80 dark:bg-purple-950/40 border border-purple-100 dark:border-purple-900/40 rounded-xl">
+            <div className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Total Proformas
+            </div>
+            <div className="text-xl font-bold text-purple-900 dark:text-purple-200">
+              {proformas.length}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* TARJETAS KPI CLIQUEABLES / TABS DE NAVEGACIÓN */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Card 1: Solicitudes Pendientes */}
-        <button
-          type="button"
-          onClick={() => setActiveTab('Pendiente')}
-          className={`p-5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden flex items-center justify-between group ${
-            activeTab === 'Pendiente'
-              ? 'bg-amber-500/10 dark:bg-amber-500/15 border-amber-500 ring-2 ring-amber-500/30 shadow-md scale-[1.01]'
-              : 'bg-white dark:bg-slate-800 border-purple-900/10 dark:border-white/10 hover:border-amber-400 hover:shadow-xs'
-          }`}
-        >
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-caption text-gray-600 dark:text-gray-400 font-extrabold uppercase tracking-wider">
-                Solicitudes Pendientes
-              </span>
-              {activeTab === 'Pendiente' && (
-                <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
-              )}
-            </div>
-            <span className="text-3xl font-extrabold text-amber-600 dark:text-amber-400 leading-none mt-2 block font-mono">
-              {pendientesCount}
-            </span>
-          </div>
-          <div
-            className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-all ${
-              activeTab === 'Pendiente'
-                ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
-                : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200/60 dark:border-white/10 group-hover:scale-105'
-            }`}
-          >
-            <Clock className="w-6 h-6" />
-          </div>
-        </button>
-
-        {/* Card 2: Proformas Autorizadas */}
-        <button
-          type="button"
-          onClick={() => setActiveTab('Autorizada')}
-          className={`p-5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden flex items-center justify-between group ${
-            activeTab === 'Autorizada'
-              ? 'bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500 ring-2 ring-emerald-500/30 shadow-md scale-[1.01]'
-              : 'bg-white dark:bg-slate-800 border-purple-900/10 dark:border-white/10 hover:border-emerald-400 hover:shadow-xs'
-          }`}
-        >
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-caption text-gray-600 dark:text-gray-400 font-extrabold uppercase tracking-wider">
-                Proformas Autorizadas
-              </span>
-              {activeTab === 'Autorizada' && (
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              )}
-            </div>
-            <span className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 leading-none mt-2 block font-mono">
-              {autorizadasCount}
-            </span>
-          </div>
-          <div
-            className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-all ${
-              activeTab === 'Autorizada'
-                ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
-                : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200/60 dark:border-white/10 group-hover:scale-105'
-            }`}
-          >
-            <CheckCircle2 className="w-6 h-6" />
-          </div>
-        </button>
-
-        {/* Card 3: Proformas Rechazadas */}
-        <button
-          type="button"
-          onClick={() => setActiveTab('Rechazada')}
-          className={`p-5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden flex items-center justify-between group ${
-            activeTab === 'Rechazada'
-              ? 'bg-rose-500/10 dark:bg-rose-500/15 border-rose-500 ring-2 ring-rose-500/30 shadow-md scale-[1.01]'
-              : 'bg-white dark:bg-slate-800 border-purple-900/10 dark:border-white/10 hover:border-rose-400 hover:shadow-xs'
-          }`}
-        >
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-caption text-gray-600 dark:text-gray-400 font-extrabold uppercase tracking-wider">
-                Proformas Rechazadas
-              </span>
-              {activeTab === 'Rechazada' && (
-                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-              )}
-            </div>
-            <span className="text-3xl font-extrabold text-rose-600 dark:text-rose-400 leading-none mt-2 block font-mono">
-              {rechazadasCount}
-            </span>
-          </div>
-          <div
-            className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-all ${
-              activeTab === 'Rechazada'
-                ? 'bg-rose-600 text-white border-rose-700 shadow-xs'
-                : 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200/60 dark:border-white/10 group-hover:scale-105'
-            }`}
-          >
-            <XCircle className="w-6 h-6" />
-          </div>
-        </button>
-      </div>
-
-      {/* Tabla Principal de Solicitudes */}
-      <div className="bg-white dark:bg-slate-800 border border-purple-900/15 dark:border-white/10 rounded-xl shadow-sm overflow-hidden space-y-0">
-        {/* Buscador y Titular del Tab Activo */}
-        <div className="p-4 border-b border-purple-900/10 dark:border-white/10 bg-purple-50/30 dark:bg-white/5 flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <span
-              className={`w-3 h-3 rounded-full ${
-                activeTab === 'Pendiente'
-                  ? 'bg-amber-500 animate-ping'
-                  : activeTab === 'Autorizada'
-                  ? 'bg-emerald-500'
-                  : 'bg-rose-500'
+      {/* Tabs y Filtros */}
+      <div className="bg-white/90 dark:bg-slate-900/90 rounded-2xl border border-purple-100/80 dark:border-white/10 p-4 shadow-xs space-y-3">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          {/* Tabs */}
+          <div className="flex items-center gap-1.5 p-1 bg-gray-100/80 dark:bg-slate-800/80 rounded-xl overflow-x-auto">
+            <button
+              onClick={() => setActiveTab('pendientes')}
+              className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'pendientes'
+                  ? 'bg-purple-600 text-white shadow-xs'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
               }`}
-            />
-            <h2 className="text-body font-extrabold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
-              {activeTab === 'Pendiente'
-                ? 'Solicitudes Pendientes de Aprobación'
-                : activeTab === 'Autorizada'
-                ? 'Proformas Autorizadas'
-                : 'Proformas Rechazadas'}
-            </h2>
+            >
+              <span>Pendientes V°B°</span>
+              {pendingCount > 0 && (
+                <span className="px-1.5 py-0.2 bg-amber-400 text-amber-950 text-[10px] font-extrabold rounded-full">
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('autorizadas')}
+              className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                activeTab === 'autorizadas'
+                  ? 'bg-purple-600 text-white shadow-xs'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
+              }`}
+            >
+              Autorizadas por Jefatura
+            </button>
+            <button
+              onClick={() => setActiveTab('devueltas')}
+              className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                activeTab === 'devueltas'
+                  ? 'bg-purple-600 text-white shadow-xs'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
+              }`}
+            >
+              Rechazadas / Derivadas
+            </button>
+            <button
+              onClick={() => setActiveTab('todas')}
+              className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                activeTab === 'todas'
+                  ? 'bg-purple-600 text-white shadow-xs'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
+              }`}
+            >
+              Todas las Proformas ({proformas.length})
+            </button>
           </div>
 
-          <div className="relative flex-1 min-w-[240px] max-w-md">
-            <Search className="w-4 h-4 absolute left-3.5 top-3 text-gray-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar por N° proforma, analista o cliente..."
-              className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-900/50 border border-purple-900/15 dark:border-white/10 rounded-lg text-body text-gray-900 dark:text-gray-100 outline-none focus:border-purple-600 shadow-xs"
-            />
+          {/* Filtro por Ejecutivo */}
+          <div className="w-full md:w-64">
+            <select
+              value={executiveFilter}
+              onChange={(e) => setExecutiveFilter(e.target.value)}
+              className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-xl text-gray-700 dark:text-gray-200 focus:border-purple-600 outline-none cursor-pointer"
+            >
+              <option value="todos">Filtrar por Ejecutivo (Todos)</option>
+              {MOCK_EXECUTIVES.map((exe) => (
+                <option key={exe.id} value={exe.id}>
+                  👤 {exe.nombre}
+                </option>
+              ))}
+            </select>
           </div>
-
-          <span className="text-caption text-gray-500 font-semibold">
-            Mostrando {filteredSolicitudes.length} proformas
-          </span>
         </div>
 
-        {/* Tabla */}
-        <div className="overflow-x-auto">
-          {filteredSolicitudes.length === 0 ? (
-            <div className="p-12 text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-purple-50 dark:bg-white/5 mx-auto flex items-center justify-center text-purple-600 dark:text-purple-400">
-                {activeTab === 'Pendiente' ? (
-                  <CheckCircle2 className="w-6 h-6 text-emerald-500" />
-                ) : (
-                  <FileText className="w-6 h-6 text-gray-400" />
-                )}
-              </div>
-              <h3 className="text-body font-bold text-gray-800 dark:text-gray-200">
-                {activeTab === 'Pendiente'
-                  ? '¡Excelente! No hay solicitudes pendientes por revisar.'
-                  : `No hay proformas en estado "${activeTab}" en este momento.`}
-              </h3>
-              <p className="text-caption text-gray-500 max-w-sm mx-auto">
-                {activeTab === 'Pendiente'
-                  ? 'Todas las solicitudes han sido resueltas o puedes cambiar de pestaña para revisar autorizadas y rechazadas.'
-                  : 'Cuando cambies el estado de una proforma, aparecerá registrada en esta pestaña.'}
-              </p>
-            </div>
-          ) : (
-            <table className="w-full text-left text-body">
-              <thead className="bg-purple-50/50 dark:bg-white/5 border-b border-purple-900/10 dark:border-white/10 text-gray-600 dark:text-gray-400 font-semibold uppercase tracking-wider text-micro">
-                <tr>
-                  <th className="py-3.5 px-4">Analista Creador</th>
-                  <th className="py-3.5 px-4">N° Proforma & Fecha</th>
-                  <th className="py-3.5 px-4">Cliente & RUT</th>
-                  <th className="py-3.5 px-4">Monto Final Neto</th>
-                  <th className="py-3.5 px-4 text-center">Descargar</th>
-                  <th className="py-3.5 px-4 text-right">Acciones Supervisor</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-purple-100/60 dark:divide-white/5">
-                {filteredSolicitudes.map((item) => {
-                  const isExpanded = expandedId === item.id;
-
-                  return (
-                    <React.Fragment key={item.id}>
-                      {/* Fila Principal */}
-                      <tr
-                        className={`transition-colors ${
-                          isExpanded
-                            ? 'bg-purple-50/60 dark:bg-purple-500/10'
-                            : 'hover:bg-purple-50/30 dark:hover:bg-white/5'
-                        }`}
-                      >
-                        {/* Analista Creador */}
-                        <td className="py-4 px-4">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300 font-bold text-xs flex items-center justify-center shrink-0 border border-purple-200 dark:border-white/10">
-                              {getInitials(item.analista.nombre)}
-                            </div>
-                            <div>
-                              <span className="font-bold text-gray-900 dark:text-gray-100 block leading-tight">
-                                {item.analista.nombre}
-                              </span>
-                              <span className="text-micro text-gray-500 dark:text-gray-400 block font-medium">
-                                {item.analista.rol}
-                              </span>
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* ID Proforma & Fecha */}
-                        <td className="py-4 px-4 font-mono font-bold">
-                          <span className="text-purple-950 dark:text-purple-200 block text-body">{item.id}</span>
-                          <span className="text-micro text-gray-500 font-medium font-sans block mt-0.5">
-                            {item.fechaSolicitud}
-                          </span>
-                        </td>
-
-                        {/* Cliente & RUT */}
-                        <td className="py-4 px-4">
-                          <span className="font-bold text-gray-900 dark:text-gray-100 block leading-tight">
-                            {item.cliente.razonSocial}
-                          </span>
-                          <span className="text-micro font-mono text-purple-700 dark:text-purple-400 font-semibold block mt-0.5">
-                            RUT: {item.cliente.rutFormateado}
-                          </span>
-                        </td>
-
-                        {/* Monto Final Neto */}
-                        <td className="py-4 px-4 font-mono font-extrabold text-purple-950 dark:text-purple-200 text-body">
-                          {formatCurrency(item.montoNeto)}
-                        </td>
-
-                        {/* Descargar Proforma */}
-                        <td className="py-4 px-4 text-center">
-                          <button
-                            type="button"
-                            onClick={() => handleDownloadProforma(item)}
-                            title="Descargar detalle en Excel (.xlsx / .csv)"
-                            className="px-3 py-1.5 bg-white dark:bg-slate-900/50 border border-purple-200 dark:border-white/10 hover:border-purple-600 text-purple-950 dark:text-purple-200 font-bold text-caption rounded-lg transition-all inline-flex items-center gap-1.5 shadow-2xs group cursor-pointer"
-                          >
-                            <Download className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform" />
-                            <span>Descargar</span>
-                          </button>
-                        </td>
-
-                        {/* Acciones Supervisor + Icono Desplegable Detalle */}
-                        <td className="py-4 px-4 text-right">
-                          <div className="flex items-center justify-end gap-2.5">
-                            {item.estado === 'Pendiente' ? (
-                              <div className="relative inline-block text-left">
-                                <button
-                                  type="button"
-                                  onClick={() => setOpenMenuId(openMenuId === item.id ? null : item.id)}
-                                  className="px-3 py-1.5 bg-purple-50 dark:bg-purple-500/15 border border-purple-200 dark:border-white/10 hover:border-purple-600 text-purple-950 dark:text-purple-200 font-bold text-caption rounded-lg transition-all inline-flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95"
-                                >
-                                  <span>Resolver</span>
-                                  <ChevronDown className="w-3.5 h-3.5" />
-                                </button>
-
-                                {openMenuId === item.id && (
-                                  <>
-                                    <div
-                                      className="fixed inset-0 z-10"
-                                      onClick={() => setOpenMenuId(null)}
-                                    />
-                                    <div className="absolute right-0 top-9 w-44 bg-white dark:bg-slate-800 border border-purple-900/15 dark:border-white/10 rounded-xl shadow-xl z-20 p-1.5 space-y-1 animate-in fade-in duration-100 text-left">
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setOpenMenuId(null);
-                                          setSelectedSolicitud(item);
-                                          setShowAutorizarModal(true);
-                                        }}
-                                        className="w-full px-3 py-2 text-left text-caption font-bold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg flex items-center gap-2 transition-colors cursor-pointer"
-                                      >
-                                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                                        <span>Autorizar</span>
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setOpenMenuId(null);
-                                          setSelectedSolicitud(item);
-                                          setMotivoRechazoSelect(MOTIVOS_RECHAZO_PREDETERMINADOS[0]);
-                                          setShowRechazarModal(true);
-                                        }}
-                                        className="w-full px-3 py-2 text-left text-caption font-bold text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg flex items-center gap-2 transition-colors cursor-pointer"
-                                      >
-                                        <XCircle className="w-4 h-4 text-rose-600" />
-                                        <span>Rechazar</span>
-                                      </button>
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-                            ) : item.estado === 'Autorizada' ? (
-                              <div className="flex items-center gap-2">
-                                <span className="inline-flex items-center gap-1 h-[25px] px-2.5 rounded-md text-micro font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-300">
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Autorizada
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleReabrirProforma(item)}
-                                  title="Reabrir proforma y mover a pendientes"
-                                  className="p-1 text-gray-400 hover:text-purple-600 dark:hover:text-purple-300 rounded-md hover:bg-purple-50 dark:hover:bg-white/10 transition-colors cursor-pointer"
-                                >
-                                  <RotateCcw className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2">
-                                <span className="inline-flex items-center gap-1 h-[25px] px-2.5 rounded-md text-micro font-bold bg-rose-50 dark:bg-rose-500/10 text-rose-800 dark:text-rose-300 border border-rose-300">
-                                  <XCircle className="w-3.5 h-3.5 text-rose-600" /> Rechazada
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleReabrirProforma(item)}
-                                  title="Reabrir proforma y mover a pendientes"
-                                  className="p-1 text-gray-400 hover:text-purple-600 dark:hover:text-purple-300 rounded-md hover:bg-purple-50 dark:hover:bg-white/10 transition-colors cursor-pointer"
-                                >
-                                  <RotateCcw className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            )}
-
-                            {/* Icono Desplegable Detalle a la Derecha con Animación de Rotación */}
-                            <button
-                              type="button"
-                              onClick={() => toggleExpand(item.id)}
-                              title={isExpanded ? 'Ocultar detalle' : 'Ver detalle completo'}
-                              className={`p-1.5 rounded-lg transition-all duration-200 border shrink-0 cursor-pointer ${
-                                isExpanded
-                                  ? 'bg-purple-100 dark:bg-purple-500/20 text-purple-950 dark:text-purple-200 border-purple-300 dark:border-white/10 shadow-2xs'
-                                  : 'bg-white dark:bg-slate-900/50 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-white/10 hover:bg-purple-50 dark:hover:bg-white/5 hover:text-purple-700'
-                              }`}
-                            >
-                              <ChevronDown
-                                className={`w-4 h-4 transition-transform duration-300 ease-out ${
-                                  isExpanded ? 'rotate-180 text-purple-700 dark:text-purple-300' : ''
-                                }`}
-                              />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-
-                      {/* Fila Desplegable Expandible (Accordion Detalle) */}
-                      {isExpanded && (
-                        <tr className="bg-purple-50/40 dark:bg-slate-900/60 border-b border-purple-100 dark:border-white/10">
-                          <td colSpan={6} className="p-4 sm:p-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                            <div className="bg-white dark:bg-slate-800 border border-purple-100 dark:border-white/10 rounded-xl p-5 shadow-2xs space-y-4">
-                              {/* Titular del Desplegable */}
-                              <div className="flex items-center justify-between border-b border-gray-100 dark:border-white/10 pb-3">
-                                <div className="flex items-center gap-2">
-                                  <FileText className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                                  <span className="font-extrabold text-caption uppercase tracking-wider text-purple-950 dark:text-purple-200">
-                                    Detalle Técnico & Condiciones Comerciales ({item.id})
-                                  </span>
-                                </div>
-                                <span className="text-micro font-medium text-gray-500">
-                                  Cuentas afectadas: <strong className="text-gray-800 dark:text-gray-200">{item.cliente.cuentas}</strong>
-                                </span>
-                              </div>
-
-                              {/* Grid 3 Columnas de Resumen */}
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {/* 1. Condiciones del Acuerdo */}
-                                <div className="bg-purple-50/50 dark:bg-white/5 p-3.5 rounded-lg border border-purple-100 dark:border-white/10 space-y-2">
-                                  <span className="text-micro font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider block">
-                                    Acuerdo Comercial Aplicado
-                                  </span>
-                                  <ul className="text-caption space-y-1 text-gray-700 dark:text-gray-300 font-medium">
-                                    <li className="flex items-center justify-between">
-                                      <span>Carga Valorada:</span>
-                                      <strong className="text-purple-950 dark:text-purple-200">{item.condiciones.cargaValorada}</strong>
-                                    </li>
-                                    <li className="flex items-center justify-between">
-                                      <span>Consolidado:</span>
-                                      <strong className="text-purple-950 dark:text-purple-200">{item.condiciones.consolidado}</strong>
-                                    </li>
-                                    <li className="flex items-center justify-between">
-                                      <span>Descuento Aplicado:</span>
-                                      <strong className="text-purple-950 dark:text-purple-200">{item.condiciones.descuento}</strong>
-                                    </li>
-                                  </ul>
-                                </div>
-
-                                {/* 2. Conteo de OFs e Inconsistencias */}
-                                <div className="bg-purple-50/50 dark:bg-white/5 p-3.5 rounded-lg border border-purple-100 dark:border-white/10 space-y-2">
-                                  <span className="text-micro font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider block">
-                                    Resumen Volumétrico de OFs
-                                  </span>
-                                  <div className="space-y-1 text-caption">
-                                    <div className="flex justify-between items-center">
-                                      <span className="text-gray-600 dark:text-gray-400">Total OFs procesadas:</span>
-                                      <strong className="font-mono text-gray-900 dark:text-gray-100">{item.totalOfs} OFs</strong>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                      <span className="text-gray-600 dark:text-gray-400">OFs con discrepancias medidas:</span>
-                                      <span className="font-mono font-bold text-amber-700 dark:text-amber-400">
-                                        {item.ofsObservadas} OFs
-                                      </span>
-                                    </div>
-                                    <p className="text-micro text-gray-500 mt-1">
-                                      *Regularizaciones de SKU alineadas al máster de productos Starken.
-                                    </p>
-                                  </div>
-                                </div>
-
-                                {/* 3. Nota / Observaciones del Analista */}
-                                <div className="bg-purple-50/50 dark:bg-white/5 p-3.5 rounded-lg border border-purple-100 dark:border-white/10 space-y-1.5">
-                                  <span className="text-micro font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider block">
-                                    Nota del Analista ({item.analista.nombre.split(' ')[0]})
-                                  </span>
-                                  <p className="text-caption text-gray-700 dark:text-gray-300 italic leading-relaxed">
-                                    "{item.observacionesAnalista}"
-                                  </p>
-                                </div>
-                              </div>
-
-                              {/* Mostrar motivo de rechazo si fue devuelta */}
-                              {item.motivoRechazo && (
-                                <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 rounded-lg text-caption text-rose-800 dark:text-rose-300 flex items-center gap-2">
-                                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                                  <span>
-                                    <strong>Motivo de Rechazo registrado:</strong> {item.motivoRechazo}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
+        {/* Input de Búsqueda */}
+        <div className="relative">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar por ID Proforma (PF-...), Cliente, RUT o motivo..."
+            className="w-full pl-9 pr-4 py-2 text-xs bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-xl focus:border-purple-600 outline-none"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           )}
         </div>
       </div>
 
-      {/* MODAL DE CONFIRMACIÓN DE AUTORIZACIÓN */}
-      {showAutorizarModal && selectedSolicitud && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 border border-purple-900/15 dark:border-white/10 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-150 relative">
-            {/* Botón Cerrar X Esquina Superior Derecha */}
-            <button
-              type="button"
-              onClick={() => {
-                setShowAutorizarModal(false);
-                setSelectedSolicitud(null);
-              }}
-              className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-start gap-3 border-b border-gray-100 dark:border-white/10 pb-3 pr-6">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-6 h-6" />
-              </div>
-              <div className="space-y-0.5">
-                <h3 className="text-title-2 font-extrabold text-gray-900 dark:text-gray-100 leading-snug">
-                  ¿Autorizar Proforma {selectedSolicitud.id}?
-                </h3>
-                <p className="text-caption text-gray-500 font-medium">
-                  Cliente: <strong className="text-gray-800 dark:text-gray-200">{selectedSolicitud.cliente.razonSocial}</strong>
-                </p>
-              </div>
-            </div>
-
-            <p className="text-body text-gray-600 dark:text-gray-300">
-              Al autorizar esta proforma por un monto de{' '}
-              <strong className="text-purple-950 dark:text-purple-200 font-mono">
-                {formatCurrency(selectedSolicitud.montoNeto)}
-              </strong>
-              , se notificará automáticamente al analista <strong className="text-gray-800 dark:text-gray-200">{selectedSolicitud.analista.nombre}</strong> y se trasladará a la pestaña de Autorizadas.
+      {/* Grid de Tarjetas de Proformas para Aprobación */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {filteredProformas.length === 0 ? (
+          <div className="lg:col-span-2 py-12 text-center bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-gray-200/80 dark:border-white/10">
+            <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
+            <p className="text-sm font-bold text-gray-800 dark:text-gray-200">
+              No hay solicitudes de aprobación bajo los filtros seleccionados
             </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Todas las proformas que requieren V°B° están al día.
+            </p>
+          </div>
+        ) : (
+          filteredProformas.map((proforma) => {
+            const isV2OrMore = (proforma.historialVersiones?.length || 1) >= 2 || proforma.versionActual === 'v2' || proforma.versionActual === 'v3';
+            const isPendingVb = proforma.estadoSupervision === 'Pendiente_Autorizacion' || proforma.estado === 'Pendiente de validación';
+            const lastVersion = proforma.historialVersiones?.[proforma.historialVersiones.length - 1];
+            const prevVersion = proforma.historialVersiones?.[0];
 
-            <div className="flex justify-end gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowAutorizarModal(false);
-                  setSelectedSolicitud(null);
-                }}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 font-bold text-body rounded-xl transition-all cursor-pointer"
+            return (
+              <div
+                key={proforma.id}
+                className={`bg-white/95 dark:bg-slate-900/95 rounded-2xl border p-5 shadow-xs flex flex-col justify-between transition-all ${
+                  isPendingVb
+                    ? 'border-amber-300 dark:border-amber-800/80 ring-1 ring-amber-400/20 shadow-md'
+                    : 'border-purple-100 dark:border-white/10'
+                }`}
               >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmAutorizar}
-                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-body rounded-xl transition-all shadow-xs cursor-pointer active:scale-95"
-              >
-                Sí, Autorizar Proforma
-              </button>
+                <div>
+                  {/* Header de la tarjeta (Siempre Visible) */}
+                  <div className="flex items-start justify-between gap-3 mb-3 border-b border-gray-100 dark:border-white/5 pb-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-sm text-purple-700 dark:text-purple-300">
+                          {proforma.id}
+                        </span>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-purple-100 text-purple-800 dark:bg-purple-950/80 dark:text-purple-300 uppercase">
+                          {proforma.versionActual || 'v1'}
+                        </span>
+                        {isPendingVb && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 animate-pulse">
+                            ⚡ Requiere V°B°
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-base font-bold text-gray-900 dark:text-white mt-1 leading-tight">
+                        {proforma.cliente}
+                      </h3>
+                      <p className="text-[11px] text-gray-500 font-mono">
+                        RUT: {proforma.rut} • {proforma.cuentaCorrienteNombre || proforma.cuentaCorrienteId}
+                      </p>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="text-xs text-gray-500">Monto Actual</div>
+                      <div className="text-lg font-black text-gray-900 dark:text-white">
+                        {proforma.montoFormatted}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Detalle del Ejecutivo & Fechas */}
+                  <div className="grid grid-cols-2 gap-2 p-2.5 bg-gray-50 dark:bg-slate-800/60 rounded-xl mb-3 text-xs">
+                    <div>
+                      <span className="text-[10px] text-gray-500 block">Ejecutivo Responsable:</span>
+                      <strong className="text-gray-900 dark:text-gray-100">
+                        {proforma.ejecutivoNombre || 'Ana Valenzuela'}
+                      </strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-gray-500 block">Fecha Última Versión:</span>
+                      <strong className="text-gray-900 dark:text-gray-100 font-mono">
+                        {lastVersion?.fechaCreacion || proforma.fecha}
+                      </strong>
+                    </div>
+                  </div>
+
+                  {/* Alertas de Elaboración (Punto 3 Requerimiento Jira) */}
+                  {proforma.alertasElaboracion && proforma.alertasElaboracion.length > 0 && (
+                    <div className="mb-3 p-3 bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-900/40 rounded-xl space-y-1">
+                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-900 dark:text-amber-300">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                        Alertas y Observaciones de Elaboración:
+                      </div>
+                      {proforma.alertasElaboracion.map((alerta, idx) => (
+                        <p key={idx} className="text-[11px] text-amber-800 dark:text-amber-300/90 leading-tight">
+                          • {alerta}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Resumen de Versiones Anteriores */}
+                  {isV2OrMore && prevVersion && (
+                    <div className="mb-3 p-2.5 bg-purple-50/40 dark:bg-purple-950/20 border border-purple-100 dark:border-white/5 rounded-xl text-xs space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-purple-900 dark:text-purple-300 uppercase tracking-wider">
+                          Motivo Rechazo en Versión 1 (Cliente):
+                        </span>
+                        <span className="text-[10px] font-mono text-gray-500">
+                          Monto anterior: {formatCurrency(prevVersion.monto)}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-700 dark:text-gray-300 italic">
+                        &quot;{prevVersion.motivo || proforma.motivoRechazoPrincipal || 'Discrepancia en tarifario comercial'}&quot;
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Acciones de Jefatura (Siempre Visibles en la parte inferior) */}
+                <div className="mt-auto pt-3 border-t border-gray-100 dark:border-white/5 flex flex-wrap items-center justify-between gap-2">
+                  {/* Botón Comparar Versiones (Diff) */}
+                  <button
+                    onClick={() => setComparingProforma(proforma)}
+                    className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 dark:hover:bg-purple-900/60 font-semibold text-xs rounded-xl border border-purple-200/60 dark:border-purple-800/40 transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <GitCompare className="w-3.5 h-3.5" />
+                    <span>Comparar Versiones (Diff)</span>
+                  </button>
+
+                  {/* Botones de Decisión Jefatura */}
+                  {isPendingVb ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setRejectingProforma(proforma);
+                          setRejectionReason('Inconsistencia en Tarifas / Descuentos');
+                          setRejectionObservations('');
+                        }}
+                        className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300 text-xs font-semibold rounded-xl border border-red-200 dark:border-red-900/40 transition-colors cursor-pointer flex items-center gap-1"
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                        <span>Rechazar V2</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleAprobarV2(proforma.id)}
+                        className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Check className="w-4 h-4" />
+                        <span>Aprobar V2 (V°B°)</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>{proforma.estadoSupervision === 'Autorizada' ? 'V°B° Concedido' : proforma.estado}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* ========================================================================= */}
+      {/* MODAL: COMPARADOR DE VERSIONES (DIFF VISUAL v1 vs v2)                     */}
+      {/* ========================================================================= */}
+      {comparingProforma && (() => {
+        const versions = comparingProforma.historialVersiones || [];
+        
+        // Determinar índice de la versión objetivo (la más reciente o versión actual)
+        const targetIndex = versions.length > 1 ? versions.length - 1 : 1;
+        // Determinar índice de la versión fuente (la versión inmediatamente anterior)
+        const sourceIndex = targetIndex > 0 ? targetIndex - 1 : 0;
+
+        const vSource = versions[sourceIndex] || versions[0];
+        const vSourceVersion = vSource?.version || 'v1';
+        const vSourceNum = vSource?.numeroVersion || (vSourceVersion === 'v2' ? 2 : vSourceVersion === 'v3' ? 3 : 1);
+
+        const vTarget = versions[targetIndex] || {
+          version: (comparingProforma.versionActual && comparingProforma.versionActual !== vSourceVersion)
+            ? comparingProforma.versionActual
+            : (vSourceVersion === 'v1' ? 'v2' : 'v3'),
+          numeroVersion: vSourceVersion === 'v1' ? 2 : 3,
+          fechaCreacion: comparingProforma.fecha,
+          usuarioResponsable: comparingProforma.ejecutivoNombre,
+          motivo: 'Recálculo con tarifas y cubicaje corregido',
+          observaciones: 'Versión ajustada tras observaciones del cliente.',
+          monto: comparingProforma.monto,
+          items: vSource?.items,
+        };
+
+        const vTargetVersion = vTarget.version || (comparingProforma.versionActual && comparingProforma.versionActual !== vSourceVersion ? comparingProforma.versionActual : 'v2');
+        const vTargetNum = vTarget.numeroVersion || (vTargetVersion === 'v3' ? 3 : vTargetVersion === 'v2' ? 2 : 2);
+
+        const itemsToRender = (vTarget.items && vTarget.items.length > 0) 
+          ? vTarget.items 
+          : (vSource?.items && vSource.items.length > 0)
+          ? vSource.items
+          : [];
+
+        return (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-purple-200 dark:border-white/10 max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 space-y-6 animate-in fade-in zoom-in-95 duration-200">
+              {/* Header Modal Diff */}
+              <div className="flex items-start justify-between gap-4 border-b border-gray-100 dark:border-white/10 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 flex items-center justify-center font-bold">
+                    <GitCompare className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                        Comparador de Versiones: {comparingProforma.id}
+                      </h2>
+                      <span className="px-2 py-0.5 rounded text-xs font-bold bg-purple-100 text-purple-800 dark:bg-purple-950/80 dark:text-purple-300">
+                        {vSourceVersion} ➔ {vTargetVersion}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Cliente: <strong>{comparingProforma.cliente}</strong> (RUT: {comparingProforma.rut}) • Responsable: {comparingProforma.ejecutivoNombre || 'Ana Valenzuela'}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setComparingProforma(null)}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Comparación de Encabezado / Totales */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Versión 1 (Original / Rechazada) */}
+                <div className="p-4 bg-red-50/50 dark:bg-red-950/20 border border-red-200/70 dark:border-red-900/40 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-red-800 dark:text-red-300 uppercase tracking-wider">
+                      Versión {vSourceNum} (Rechazada por Cliente)
+                    </span>
+                    <span className="text-xs font-mono text-gray-500">
+                      {vSource?.fechaCreacion || '24/08/2026'}
+                    </span>
+                  </div>
+                  <div className="text-2xl font-black text-red-900 dark:text-red-200">
+                    {formatCurrency(vSource?.monto || comparingProforma.monto)}
+                  </div>
+                  <div className="text-xs text-red-800/80 dark:text-red-300/80">
+                    <strong>Motivo de rechazo:</strong> {vSource?.motivo || comparingProforma.motivoRechazoPrincipal || 'Diferencias tarifarias'}
+                  </div>
+                  {vSource?.observaciones && (
+                    <p className="text-[11px] text-gray-600 dark:text-gray-400 italic">
+                      Obs: {vSource.observaciones}
+                    </p>
+                  )}
+                </div>
+
+                {/* Versión Destino (Ajustada / Nueva) */}
+                <div className="p-4 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/70 dark:border-emerald-900/40 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+                      Versión {vTargetNum} (Nueva Versión Ajustada)
+                    </span>
+                    <span className="text-xs font-mono text-gray-500">
+                      {vTarget.fechaCreacion || new Date().toLocaleDateString('es-CL')}
+                    </span>
+                  </div>
+                  <div className="text-2xl font-black text-emerald-900 dark:text-emerald-200">
+                    {formatCurrency(vTarget.monto || comparingProforma.monto)}
+                  </div>
+                  <div className="text-xs text-emerald-800/80 dark:text-emerald-300/80">
+                    <strong>Ajuste realizado:</strong> {vTarget.motivo || 'Recálculo con tarifas y cubicaje corregido'}
+                  </div>
+                  {vTarget.observaciones && (
+                    <p className="text-[11px] text-gray-600 dark:text-gray-400 italic">
+                      Obs: {vTarget.observaciones}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Comparador de Cambios por Ítem (Diff Tabla) */}
+              <div>
+                <h3 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-purple-600" />
+                  Desglose de Ítems y Modificaciones entre Versiones
+                </h3>
+
+                <div className="border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden text-xs">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-100/70 dark:bg-slate-800/70 text-[11px] text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-white/10">
+                        <th className="py-2.5 px-3">Código & Concepto</th>
+                        <th className="py-2.5 px-3 text-right">Cant.</th>
+                        <th className="py-2.5 px-3 text-right">Tarifa {vSourceVersion}</th>
+                        <th className="py-2.5 px-3 text-right">Tarifa {vTargetVersion} (Nueva)</th>
+                        <th className="py-2.5 px-3 text-right">Total {vSourceVersion}</th>
+                        <th className="py-2.5 px-3 text-right">Total {vTargetVersion}</th>
+                        <th className="py-2.5 px-3 text-center">Variación</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+                      {itemsToRender.map((item) => {
+                        const v1Item = vSource?.items?.find((i) => i.codigo === item.codigo);
+                        const diff = item.total - (v1Item?.total || item.total);
+                        return (
+                          <tr key={item.id} className={item.ajustadoEnV2 ? 'bg-amber-50/40 dark:bg-amber-950/20' : ''}>
+                            <td className="py-2.5 px-3 font-medium">
+                              <span className="font-mono text-purple-700 dark:text-purple-300 mr-1.5 font-bold">
+                                {item.codigo}
+                              </span>
+                              {item.descripcion}
+                              {item.ajustadoEnV2 && (
+                                <span className="ml-2 px-1.5 py-0.2 bg-amber-200 text-amber-900 text-[10px] font-bold rounded">
+                                  Modificado
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono">{item.cantidad}</td>
+                            <td className="py-2.5 px-3 text-right font-mono text-gray-500">
+                              {formatCurrency(v1Item?.tarifaBase || item.tarifaBase)} ({v1Item?.descuentoPct || 0}%)
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono font-bold text-gray-900 dark:text-white">
+                              {formatCurrency(item.tarifaBase)} ({item.descuentoPct}%)
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono text-gray-500">
+                              {formatCurrency(v1Item?.total || item.total)}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono font-bold text-gray-900 dark:text-white">
+                              {formatCurrency(item.total)}
+                            </td>
+                            <td className="py-2.5 px-3 text-center">
+                              {diff === 0 ? (
+                                <span className="text-gray-400 font-mono text-[11px]">—</span>
+                              ) : diff < 0 ? (
+                                <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono text-[11px]">
+                                  {formatCurrency(diff)}
+                                </span>
+                              ) : (
+                                <span className="font-bold text-red-600 dark:text-red-400 font-mono text-[11px]">
+                                  +{formatCurrency(diff)}
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Botones de Aprobación / Rechazo desde el Modal */}
+              <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-white/10">
+                <button
+                  onClick={() => setComparingProforma(null)}
+                  className="px-4 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+                >
+                  Cerrar Comparador
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setRejectingProforma(comparingProforma);
+                      setRejectionReason('Inconsistencia en Tarifas / Descuentos');
+                      setRejectionObservations('');
+                    }}
+                    className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-950/70 dark:text-red-300 font-bold text-xs rounded-xl border border-red-200 dark:border-red-900/50 transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    <span>Rechazar Versión {vTargetNum}</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleAprobarV2(comparingProforma.id)}
+                    className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>Aprobar Versión {vTargetNum} (V°B° Jefatura)</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
-      {/* MODAL DE RECHAZO DE PROFORMA */}
-      {showRechazarModal && selectedSolicitud && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 border border-purple-900/15 dark:border-white/10 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-150 relative">
-            {/* Botón Cerrar X Esquina Superior Derecha */}
-            <button
-              type="button"
-              onClick={() => {
-                setShowRechazarModal(false);
-                setSelectedSolicitud(null);
-              }}
-              className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            {/* Header del Modal */}
-            <div className="flex items-start gap-3 border-b border-gray-100 dark:border-white/10 pb-3 pr-6">
-              <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 flex items-center justify-center shrink-0">
-                <XCircle className="w-6 h-6" />
+      {/* ========================================================================= */}
+      {/* MODAL: RECHAZAR / DEVOLVER PROFORMA V2 CON REGISTRO DE MOTIVO              */}
+      {/* ========================================================================= */}
+      {rejectingProforma && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-red-200 dark:border-red-900/50 p-6 max-w-lg w-full shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-white/10 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-red-100 dark:bg-red-950/70 text-red-700 dark:text-red-300 flex items-center justify-center font-bold">
+                  <XCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                    Rechazar y Devolver Proforma V2
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    {rejectingProforma.id} • {rejectingProforma.cliente}
+                  </p>
+                </div>
               </div>
-              <div className="space-y-0.5">
-                <h3 className="text-title-2 font-extrabold text-gray-900 dark:text-gray-100 leading-snug">
-                  ¿Deseas rechazar la proforma
-                  <span className="block font-mono text-purple-950 dark:text-purple-200 mt-0.5">
-                    {selectedSolicitud.id}?
-                  </span>
-                </h3>
-                <p className="text-caption text-gray-500 font-medium">
-                  Cliente: <strong className="text-gray-800 dark:text-gray-200">{selectedSolicitud.cliente.razonSocial}</strong>
-                </p>
-              </div>
+              <button
+                onClick={() => setRejectingProforma(null)}
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            {/* Parrafo corto */}
-            <p className="text-body text-gray-600 dark:text-gray-300">
-              La proforma será devuelta al analista <strong className="text-gray-800 dark:text-gray-200">{selectedSolicitud.analista.nombre}</strong> para su revisión.
-            </p>
+            <form onSubmit={handleConfirmRechazoV2} className="space-y-4">
+              {/* Motivo de Rechazo Principal */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                  Motivo de Rechazo / Corrección: *
+                </label>
+                <select
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  required
+                  className="w-full px-3.5 py-2.5 text-xs bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-xl text-gray-800 dark:text-gray-200 focus:border-red-600 focus:ring-2 focus:ring-red-600/10 outline-none cursor-pointer font-medium"
+                >
+                  <option value="Inconsistencia en Tarifas / Descuentos">Inconsistencia en Tarifas / Descuentos</option>
+                  <option value="Diferencia en recubitaje / medidas de SKUs">Diferencia en recubitaje / medidas de SKUs</option>
+                  <option value="Error en la selección de Cuentas Corrientes">Error en la selección de Cuentas Corrientes</option>
+                  <option value="Falta de Respaldo de Orden de Compra">Falta de Respaldo de Orden de Compra</option>
+                  <option value="Requiere Derivación a Negociación KAM">Requiere Derivación a Negociación KAM</option>
+                  <option value="Otro Motivo Operacional">Otro Motivo Operacional</option>
+                </select>
+              </div>
 
-            {/* Custom Modern Dropdown Selector de Motivos */}
-            <div className="relative space-y-1.5">
-              <label className="text-caption font-bold text-gray-800 dark:text-gray-200 block">
-                Selecciona el motivo de rechazo <span className="text-rose-500">*</span>
-              </label>
-
-              <button
-                type="button"
-                onClick={() => setMotivoSelectOpen(!motivoSelectOpen)}
-                className="w-full p-3 bg-white dark:bg-slate-900/60 border border-purple-900/20 dark:border-white/15 hover:border-purple-600 rounded-xl text-body text-gray-900 dark:text-gray-100 font-semibold text-left outline-none shadow-2xs flex items-center justify-between cursor-pointer transition-all"
-              >
-                <span className="truncate pr-2">{motivoRechazoSelect}</span>
-                <ChevronDown
-                  className={`w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0 transition-transform duration-200 ${
-                    motivoSelectOpen ? 'rotate-180' : ''
-                  }`}
+              {/* Observaciones Obligatorias */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                  Observaciones Detalladas para el Ejecutivo ({rejectingProforma.ejecutivoNombre}): *
+                </label>
+                <textarea
+                  value={rejectionObservations}
+                  onChange={(e) => setRejectionObservations(e.target.value)}
+                  required
+                  placeholder="Detalla qué correcciones debe aplicar el ejecutivo antes de volver a solicitar V°B°..."
+                  rows={4}
+                  className="w-full p-3 text-xs bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-xl text-gray-800 dark:text-gray-200 focus:border-red-600 focus:ring-2 focus:ring-red-600/10 outline-none resize-none"
                 />
-              </button>
+              </div>
 
-              {motivoSelectOpen && (
-                <>
-                  <div className="fixed inset-0 z-20" onClick={() => setMotivoSelectOpen(false)} />
-                  <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-purple-900/15 dark:border-white/10 rounded-xl shadow-xl z-30 p-1.5 space-y-1 max-h-60 overflow-y-auto animate-in fade-in duration-150">
-                    {MOTIVOS_RECHAZO_PREDETERMINADOS.map((motivo) => {
-                      const isSelected = motivo === motivoRechazoSelect;
-                      return (
-                        <button
-                          key={motivo}
-                          type="button"
-                          onClick={() => {
-                            setMotivoRechazoSelect(motivo);
-                            setMotivoSelectOpen(false);
-                          }}
-                          className={`w-full p-2.5 text-left text-body rounded-lg transition-colors flex items-center justify-between cursor-pointer ${
-                            isSelected
-                              ? 'bg-purple-50 dark:bg-purple-500/20 text-purple-950 dark:text-purple-200 font-bold'
-                              : 'text-gray-700 dark:text-gray-300 hover:bg-purple-50/60 dark:hover:bg-white/5 font-medium'
-                          }`}
-                        >
-                          <span className="truncate">{motivo}</span>
-                          {isSelected && <Check className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0 ml-2" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Acciones del Modal */}
-            <div className="flex justify-end gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowRechazarModal(false);
-                  setSelectedSolicitud(null);
-                }}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 font-bold text-body rounded-xl transition-all cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmRechazar}
-                className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-body rounded-xl transition-all shadow-xs cursor-pointer active:scale-95 flex items-center gap-1.5"
-              >
-                <XCircle className="w-4 h-4" />
-                <span>Sí, Rechazar y Devolver</span>
-              </button>
-            </div>
+              {/* Botones de confirmación */}
+              <div className="flex items-center justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setRejectingProforma(null)}
+                  className="px-4 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={!rejectionObservations.trim()}
+                  className="px-4 py-2 text-xs font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                >
+                  <XCircle className="w-4 h-4" />
+                  Confirmar Rechazo y Devolver
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

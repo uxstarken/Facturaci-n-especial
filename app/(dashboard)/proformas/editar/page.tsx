@@ -90,6 +90,7 @@ export interface SkuResolutionItem {
   dimensionesFinalesCm: { largo: number; ancho: number; alto: number };
   estadoValidacion: 'Validado_Auto' | 'Pendiente_IA' | 'Pendiente_Manual' | 'Validado_Humano';
   modificadoPorAnalista?: boolean;
+  modificadoPorEjecutivo?: boolean;
 }
 
 // MOCK DE DATOS CON 500 OFs AGRUPADAS EN 5 SKUs CLAVE
@@ -384,6 +385,7 @@ function EditarProformaContent() {
               ...s,
               estadoValidacion: 'Validado_Humano',
               modificadoPorAnalista: true,
+              modificadoPorEjecutivo: true,
               pesoFinalKg: Number(iaFormPeso),
               dimensionesFinalesCm: {
                 largo: Number(iaFormLargo),
@@ -396,7 +398,7 @@ function EditarProformaContent() {
     );
     setEditingIaItem(null);
     showToast(
-      `Medidas modificadas manualmente por analista para ${editingIaItem.sku}. Registrado en auditoría como cambio manual sobre IA (${editingIaItem.totalOfs} OFs).`,
+      `Medidas modificadas manualmente por ejecutivo para ${editingIaItem.sku}. Registrado en auditoría como cambio manual sobre IA (${editingIaItem.totalOfs} OFs).`,
       'success',
       5000,
       'Modificación Manual Registrada'
@@ -722,7 +724,7 @@ function EditarProformaContent() {
                 <div className="grid grid-cols-2 gap-3 text-caption">
                   <div className="bg-sky-50/50 dark:bg-sky-950/20 p-2.5 rounded-xl border border-sky-100 dark:border-sky-900/30">
                     <span className="text-micro font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">
-                      Analista de Pricing
+                      Ejecutivo de Pricing
                     </span>
                     <strong className="text-gray-900 dark:text-gray-100 font-bold block">
                       Carlos Mendoza
@@ -1311,10 +1313,10 @@ function EditarProformaContent() {
 
                             {isIa && (
                               <div>
-                                {item.modificadoPorAnalista ? (
+                                {item.modificadoPorAnalista || item.modificadoPorEjecutivo ? (
                                   <div className="space-y-1">
                                     <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/15 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-500/30">
-                                      <UserCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> Modificado por Analista
+                                      <UserCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> Modificado por Ejecutivo
                                     </span>
                                     <span className="text-[10px] text-gray-500 dark:text-gray-400 block font-mono">
                                       Sugerencia IA original: {item.datosIa?.pesoKg}kg ({item.datosIa?.dimensionesCm.largo}x{item.datosIa?.dimensionesCm.ancho}x{item.datosIa?.dimensionesCm.alto} cm)
@@ -1585,7 +1587,7 @@ function EditarProformaContent() {
               <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
               <div className="text-micro leading-relaxed">
                 <span className="font-bold block text-amber-950 dark:text-amber-100">Registro de Cambio Manual:</span>
-                Al guardar modificaciones aquí, este SKU quedará registrado con trazabilidad como <strong>Modificado manualmente por Analista</strong> y no como validado por IA.
+                Al guardar modificaciones aquí, este SKU quedará registrado con trazabilidad como <strong>Modificado manualmente por Ejecutivo</strong> y no como validado por IA.
               </div>
             </div>
 
@@ -1832,7 +1834,7 @@ function EditarProformaContent() {
               {sinEvidenciaEncontrada && (
                 <div className="mt-2.5 pt-2.5 border-t border-amber-200/70 dark:border-white/10 space-y-1 animate-in fade-in duration-150">
                   <label className="text-micro font-bold text-amber-950 dark:text-amber-200 block">
-                    Observación / Justificación del Analista:
+                    Observación / Justificación del Ejecutivo:
                   </label>
                   <input
                     type="text"

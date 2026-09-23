@@ -34,6 +34,7 @@ import { Proforma, VersionProforma } from '@/lib/types';
 import { formatCurrency } from '@/lib/utils';
 import { RespuestaClienteModal } from '@/components/proformas/RespuestaClienteModal';
 import { RegistrarFacturaModal } from '@/components/proformas/RegistrarFacturaModal';
+import { JefeDashboard } from '@/components/dashboard/JefeDashboard';
 
 type KpiFilterType = 'todos' | 'pendientes' | 'rechazadas' | 'pricing' | 'aprobadas' | 'kam';
 
@@ -42,6 +43,10 @@ function DashboardHomeContent() {
   const { theme } = useTheme();
   const { showToast } = useToast();
   const searchParams = useSearchParams();
+
+  if (user?.role === 'Jefatura') {
+    return <JefeDashboard />;
+  }
 
   const [proformas, setProformas] = useState<Proforma[]>(MOCK_PROFORMAS);
   const [searchTerm, setSearchTerm] = useState('');
@@ -115,14 +120,14 @@ function DashboardHomeContent() {
       })
     );
     showToast(
-      `Tarifas corregidas por Pricing para ${proformaId}. El analista ya puede editar la proforma con los nuevos precios.`,
+      `Tarifas corregidas por Pricing para ${proformaId}. El ejecutivo ya puede editar la proforma con los nuevos precios.`,
       'info',
       6500,
       'Tarifas Corregidas por Pricing'
     );
   };
 
-  // HANDLER: SIMULAR DEVOLUCIÓN DE SUPERVISOR A ANALISTA
+  // HANDLER: SIMULAR DEVOLUCIÓN DE SUPERVISOR A EJECUTIVO
   const handleDevolverSupervisor = (proformaId: string) => {
     setProformas((prev) =>
       prev.map((p) => {
@@ -137,7 +142,7 @@ function DashboardHomeContent() {
       })
     );
     showToast(
-      `Proforma ${proformaId} devuelta al analista con observaciones para nuevo ajuste de medidas.`,
+      `Proforma ${proformaId} devuelta al ejecutivo con observaciones para nuevo ajuste de medidas.`,
       'warning',
       5500,
       'Devuelta por Jefatura'
@@ -384,10 +389,10 @@ function DashboardHomeContent() {
       {/* Header */}
       <div>
         <h1 className="text-h1 font-bold text-gray-900 dark:text-gray-100">
-          Hola, {user?.name.split(' ')[0] || 'Analista'} 👋
+          Hola, {user?.name.split(' ')[0] || 'Ejecutivo'} 👋
         </h1>
         <p className="text-caption text-gray-600 dark:text-gray-400">
-          Rol: <span className="font-semibold text-purple-700 dark:text-purple-400">{user?.role || 'Analista'}</span> · Gestión de proformas y validación comercial
+          Rol: <span className="font-semibold text-purple-700 dark:text-purple-400">{user?.role || 'Ejecutivo'}</span> · Gestión de proformas y validación comercial
         </p>
       </div>
 
@@ -687,23 +692,13 @@ function DashboardHomeContent() {
               />
             </div>
 
-            {user?.role === 'Jefatura' ? (
-              <Link
-                href="/aprobaciones"
-                className={`inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r ${theme.buttonGradient} text-white rounded-lg text-caption font-semibold shadow-sm transition-all`}
-              >
-                <CheckSquare className="w-3.5 h-3.5" />
-                Aprobaciones pendientes (4)
-              </Link>
-            ) : (
-              <Link
-                href="/proformas/nueva"
-                className={`inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r ${theme.buttonGradient} text-white rounded-lg text-caption font-semibold shadow-sm transition-all`}
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Nueva Proforma
-              </Link>
-            )}
+            <Link
+              href="/proformas/nueva"
+              className={`inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r ${theme.buttonGradient} text-white rounded-lg text-caption font-semibold shadow-sm transition-all`}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Nueva Proforma
+            </Link>
           </div>
         </div>
 

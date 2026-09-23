@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, FilePlus2, ShieldAlert, LogOut, User, CheckSquare } from 'lucide-react';
+import { LayoutDashboard, FilePlus2, ShieldAlert, LogOut, User, CheckSquare, Users } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { useTheme } from '@/context/theme-context';
 import { getInitials } from '@/lib/utils';
@@ -20,18 +20,19 @@ export function Sidebar() {
 
   const isJefatura = user?.role === 'Jefatura';
 
-  // Bifurcación estricta de navegación según requerimiento:
-  // - Analista: Home, Crear Proforma, Mi perfil y temas
-  // - Jefe: Home, Aprobaciones, Auditorías, Mi perfil y temas
+  // Navegación adaptativa según rol:
+  // - Jefe: Dashboard & KPIs, Gestión de Clientes & Asignaciones, Aprobaciones V2, Auditorías, Perfil
+  // - Ejecutivo: Home, Crear Proforma, Mi perfil y temas
   const navItems = isJefatura
     ? [
-        { label: 'Home', href: '/', icon: LayoutDashboard },
-        { label: 'Aprobaciones', href: '/aprobaciones', icon: CheckSquare, badge: '4' },
-        { label: 'Auditorías', href: '/auditoria', icon: ShieldAlert, badge: '3' },
+        { label: 'Dashboard & KPIs', href: '/', icon: LayoutDashboard },
+        { label: 'Gestión Clientes', href: '/clientes', icon: Users, badge: '3' },
+        { label: 'Aprobaciones V2', href: '/aprobaciones', icon: CheckSquare, badge: '2' },
+        { label: 'Auditoría & Bitácora', href: '/auditoria', icon: ShieldAlert },
         { label: 'Mi perfil y temas', href: '/perfil', icon: User },
       ]
     : [
-        { label: 'Home', href: '/', icon: LayoutDashboard },
+        { label: 'Home Operativo', href: '/', icon: LayoutDashboard },
         { label: 'Crear Proforma', href: '/proformas/nueva', icon: FilePlus2 },
         { label: 'Mi perfil y temas', href: '/perfil', icon: User },
       ];
@@ -71,12 +72,12 @@ export function Sidebar() {
       <nav className="flex-1 p-3 flex flex-col gap-1 relative z-10">
         <div className="flex items-center justify-between px-2.5 pt-2 pb-1">
           <span className="text-micro font-semibold text-gray-600 dark:text-gray-500 uppercase tracking-wider">
-            Menú {isJefatura ? 'Jefatura' : 'Analista'}
+            Menú {isJefatura ? 'Jefatura' : 'Ejecutivo'}
           </span>
           <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
             isJefatura ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300' : 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300'
           }`}>
-            {isJefatura ? 'Jefe' : 'Analista'}
+            {isJefatura ? 'Jefe' : 'Ejecutivo'}
           </span>
         </div>
 
@@ -112,12 +113,12 @@ export function Sidebar() {
       <div className="p-3 border-t border-purple-900/10 dark:border-white/5 relative z-10 bg-white/30 dark:bg-black/20 backdrop-blur-sm">
         <div className="flex items-center gap-2.5 p-2 rounded-lg bg-white/80 dark:bg-slate-800/60 border border-purple-200/60 dark:border-white/10 shadow-xs">
           <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${theme.accentGradient} flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-xs`}>
-            {user ? getInitials(user.name) : (isJefatura ? 'JF' : 'AN')}
+            {user ? getInitials(user.name) : (isJefatura ? 'JF' : 'EJ')}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">{user?.name || (isJefatura ? 'Jefe' : 'Analista')}</p>
+            <p className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">{user?.name || (isJefatura ? 'Jefe' : 'Ejecutivo')}</p>
             <p className="text-micro text-gray-600 dark:text-gray-400 truncate">
-              {isJefatura ? 'Jefatura de Facturación' : 'Analista de Facturación'}
+              {isJefatura ? 'Jefatura de Facturación' : 'Ejecutivo de Facturación'}
             </p>
           </div>
           <button

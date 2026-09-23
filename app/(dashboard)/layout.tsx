@@ -23,11 +23,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [user, router]);
 
   return (
-    <div className={`flex min-h-screen bg-gradient-to-br ${theme.mainBgGradient}`}>
+    <div className={`flex min-h-screen bg-gradient-to-br ${theme.mainBgGradient} overflow-x-hidden`}>
       <Sidebar />
-      <div className="ml-[230px] flex-1 flex flex-col min-h-screen">
+      <div className="ml-[230px] flex-1 flex flex-col min-h-screen min-w-0 max-w-[calc(100vw-230px)] overflow-x-hidden">
         <Topbar />
-        <main className="p-7 flex-1">{children}</main>
+        <main className="p-5 md:p-6 flex-1 min-w-0 overflow-x-hidden">{children}</main>
       </div>
     </div>
   );

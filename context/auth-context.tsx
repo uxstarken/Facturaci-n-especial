@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (stored) {
       try {
         setUser(JSON.parse(stored));
-      } catch (e) {
+      } catch {
         localStorage.removeItem('starken_fe_user');
         setUser(null);
       }
@@ -43,23 +43,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = (email: string, pass: string, roleOverride?: Role) => {
     localStorage.removeItem('starken_fe_logged_out');
     
+    if (pass && pass.length < 6) {
+      return {
+        success: false,
+        requires2FA: false,
+        message: 'La contraseña debe tener al menos 6 caracteres.',
+      };
+    }
+    
     const cleanEmail = email.trim().toLowerCase();
     
     // Regla inteligente:
-    // Si contiene "jefe" o "jefatura" -> Jefatura (Carlos Muñoz)
-    // De lo contrario -> Analista (Ana Valenzuela)
+    // Si contiene "jefe" o "jefatura" -> Jefatura (Carlos Muñoz - Jefe de Facturación Especial)
+    // De lo contrario -> Ejecutivo (Ana Valenzuela)
     const isJefe = cleanEmail.includes('jefe') || cleanEmail.includes('jefatura');
-    const assignedRole: Role = roleOverride || (isJefe ? 'Jefatura' : 'Analista');
+    const assignedRole: Role = roleOverride || (isJefe ? 'Jefatura' : 'Ejecutivo');
 
     const assignedName = assignedRole === 'Jefatura' ? 'Carlos Muñoz' : 'Ana Valenzuela';
-    const assignedEmail = cleanEmail || (assignedRole === 'Jefatura' ? 'jefe@starken.cl' : 'analista@starken.cl');
+    const assignedEmail = cleanEmail || (assignedRole === 'Jefatura' ? 'jefe@starken.cl' : 'ejecutivo@starken.cl');
 
     const loggedInUser: User = {
       id: assignedRole === 'Jefatura' ? '2' : '1',
       name: assignedName,
       email: assignedEmail,
       role: assignedRole,
-      requires2FA: false, // Ingreso directo con cualquier contraseña
+      requires2FA: false, // Ingreso directo con contraseña válida (mínimo 6 dígitos)
     };
 
     setUser(loggedInUser);
@@ -67,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { success: true, requires2FA: false };
   };
 
-  const verify2FA = (code: string) => {
+  const verify2FA = (_code: string) => {
     if (pendingUser) {
       localStorage.removeItem('starken_fe_logged_out');
       setUser(pendingUser);

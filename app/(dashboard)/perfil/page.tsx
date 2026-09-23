@@ -38,11 +38,11 @@ export default function PerfilPage() {
                   : 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
               }`}
             >
-              {user?.role || 'Analista'}
+              {user?.role || 'Ejecutivo'}
             </span>
           </div>
           <p className="text-caption text-gray-600 dark:text-gray-400 flex items-center gap-1.5 mt-1">
-            <Mail className="w-3.5 h-3.5 text-gray-400" /> {user?.email || 'analista@starken.cl'}
+            <Mail className="w-3.5 h-3.5 text-gray-400" /> {user?.email || 'ejecutivo@starken.cl'}
           </p>
         </div>
       </div>

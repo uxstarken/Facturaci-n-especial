@@ -21,7 +21,7 @@ Plataforma integral desarrollada en Next.js (App Router), TypeScript y Tailwind 
    * Agrupación por SKU único para resolución masiva de 500+ Órdenes de Flete (OFs).
 
 4. **Autenticación y Roles:**
-   * Soporte para roles: `Analista`, `Jefatura`, `Administrador` y `Gerencia`.
+   * Soporte para roles: `Ejecutivo`, `Jefatura`, `Administrador` y `Gerencia`.
    * Simulación de 2FA y registro de auditoría.
 
 ---

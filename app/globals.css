@@ -26,6 +26,13 @@
     --accent: #7C3AED;
     --accent-hover: #6D28D9;
   }
+
+  html,
+  body {
+    max-width: 100vw;
+    overflow-x: hidden !important;
+    position: relative;
+  }
 }
 
 .glass-card {

@@ -43,10 +43,10 @@ export default function LoginPage() {
     const isJefe =
       cleanEmail.includes('jefe') ||
       cleanEmail.includes('jefatura');
-    const roleToAssign: Role = isJefe ? 'Jefatura' : 'Analista';
+    const roleToAssign: Role = isJefe ? 'Jefatura' : 'Ejecutivo';
 
     const res = login(
-      cleanEmail || (isJefe ? 'jefe@starken.cl' : 'analista@starken.cl'),
+      cleanEmail || (isJefe ? 'jefe@starken.cl' : 'ejecutivo@starken.cl'),
       password,
       roleToAssign
     );
@@ -158,6 +158,50 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleLoginSubmit} className="space-y-4">
+            {/* Quick Demo Role Selector Pills */}
+            <div className="p-3 bg-purple-50/70 border border-purple-200/70 rounded-xl">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-purple-800 block mb-2">
+                Accesos rápidos de prueba:
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('jefe@starken.cl');
+                    setPassword('123456');
+                  }}
+                  className={`text-left p-2 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
+                    email.includes('jefe')
+                      ? 'bg-purple-600 text-white border-purple-700 shadow-xs'
+                      : 'bg-white text-gray-700 border-purple-200 hover:bg-purple-100/50'
+                  }`}
+                >
+                  <div className="font-bold">👔 Jefe Facturación</div>
+                  <div className={`text-[10px] truncate ${email.includes('jefe') ? 'text-purple-100' : 'text-gray-500'}`}>
+                    jefe@starken.cl
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('ejecutivo@starken.cl');
+                    setPassword('123456');
+                  }}
+                  className={`text-left p-2 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
+                    !email.includes('jefe') && email
+                      ? 'bg-purple-600 text-white border-purple-700 shadow-xs'
+                      : 'bg-white text-gray-700 border-purple-200 hover:bg-purple-100/50'
+                  }`}
+                >
+                  <div className="font-bold">📋 Ejecutivo Facturación</div>
+                  <div className={`text-[10px] truncate ${!email.includes('jefe') && email ? 'text-purple-100' : 'text-gray-500'}`}>
+                    ejecutivo@starken.cl
+                  </div>
+                </button>
+              </div>
+            </div>
+
             <div>
               <label className="login-label-exact">
                 Correo electrónico
@@ -176,9 +220,12 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="login-label-exact">
-                Contraseña
-              </label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="login-label-exact mb-0">
+                  Contraseña
+                </label>
+                <span className="text-[11px] text-gray-600">Mínimo 6 caracteres</span>
+              </div>
               <div className="relative flex items-center">
                 <Lock className="w-4 h-4 absolute left-3.5 text-gray-400 pointer-events-none" />
                 <input
@@ -186,6 +233,8 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
+                  minLength={6}
+                  required
                   className="login-input-exact"
                 />
                 <button
