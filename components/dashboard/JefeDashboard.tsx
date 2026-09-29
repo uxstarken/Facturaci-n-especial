@@ -30,6 +30,10 @@ import {
   Receipt,
   UserCheck,
   UserX,
+  X,
+  Calendar,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { MOCK_PROFORMAS, MOCK_EXECUTIVES, MOCK_CLIENTS } from '@/lib/mock-data';
 import { DashboardFiltersState } from '@/lib/types';
@@ -44,6 +48,7 @@ export function JefeDashboard() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<DashboardTab>('comercial');
   const [kpiFilter, setKpiFilter] = useState<JefeKpiFilterType>('todos');
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
 
   // Filtros del Dashboard (Punto 10 Requerimiento Jira)
   const [filters, setFilters] = useState<DashboardFiltersState>({
@@ -59,6 +64,19 @@ export function JefeDashboard() {
   });
 
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Cantidad de filtros activos
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (filters.periodo !== 'mes') count++;
+    if (filters.ejecutivoId !== 'todos') count++;
+    if (filters.clienteId && filters.clienteId !== 'todos') count++;
+    if (filters.estadoProforma !== 'todos') count++;
+    if (filters.version !== 'todos') count++;
+    if (filters.motivoRechazo !== 'todos') count++;
+    if (searchTerm.trim() !== '') count++;
+    return count;
+  }, [filters, searchTerm]);
 
   // Proformas base filtradas por el período seleccionado en el selector superior
   const periodoFilteredProformas = useMemo(() => {
@@ -454,7 +472,7 @@ export function JefeDashboard() {
           <select
             value={filters.periodo}
             onChange={(e) => setFilters({ ...filters, periodo: e.target.value as DashboardFiltersState['periodo'] })}
-            className="px-3.5 py-2 text-caption bg-white dark:bg-slate-800 border border-purple-200/80 dark:border-white/10 rounded-xl font-bold text-purple-900 dark:text-purple-200 shadow-xs outline-none cursor-pointer"
+            className="px-3.5 py-2 text-caption bg-white dark:bg-slate-800 border border-purple-200/80 dark:border-white/10 rounded-xl font-normal text-gray-600 dark:text-gray-300 shadow-xs outline-none cursor-pointer"
           >
             <option value="hoy">Hoy</option>
             <option value="semana">Esta Semana</option>
@@ -477,7 +495,7 @@ export function JefeDashboard() {
           }`}
         >
           <TrendingUp className="w-4 h-4" />
-          <span>Dashboard Comercial (General)</span>
+          <span>Dashboard Comercial</span>
         </button>
 
         <button
@@ -522,6 +540,275 @@ export function JefeDashboard() {
       {/* ========================================================================= */}
       {activeTab === 'comercial' && (
         <div className="space-y-6">
+          {/* ========================================================================= */}
+          {/* CARD DE FILTROS DESPLEGABLE Y CONTRAÍBLE (Sobre los KPIs y bajo pestañas) */}
+          {/* ========================================================================= */}
+          <div className="bg-white dark:bg-slate-900 border border-purple-200/90 dark:border-purple-900/50 rounded-2xl px-3.5 sm:px-4 py-2 sm:py-2.5 shadow-xs transition-all duration-300">
+            {/* Header del Card de Filtros (Siempre visible) */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              {/* Título con su icono */}
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 flex items-center justify-center font-bold shrink-0 shadow-2xs">
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-purple-600" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-gray-900 dark:text-white">
+                    Filtros
+                  </span>
+                  {activeFiltersCount > 0 && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-950 shadow-2xs">
+                      {activeFiltersCount} activo{activeFiltersCount > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Número de proformas encontradas + Botón de filtros */}
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                <span className="text-xs text-purple-800 dark:text-purple-300 font-bold bg-purple-50 dark:bg-purple-950/50 px-2.5 py-1 rounded-lg border border-purple-100 dark:border-purple-900/50">
+                  {dynamicFilteredProformas.length} proformas encontradas
+                </span>
+
+                {activeFiltersCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={resetFilters}
+                    className="px-2 py-1 text-xs font-bold text-purple-700 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-200 flex items-center gap-1 cursor-pointer transition-colors bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/60 rounded-lg border border-purple-200/60 dark:border-purple-800/40 shadow-2xs"
+                    title="Restablecer todos los filtros"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Limpiar</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
+                  className={`px-3 py-1 text-xs rounded-lg font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 border shadow-xs ${
+                    isFilterPanelOpen
+                      ? 'bg-purple-600 text-white border-purple-600 shadow-purple-600/20'
+                      : 'bg-purple-50/80 hover:bg-purple-100 dark:bg-slate-800 text-purple-900 dark:text-purple-200 border-purple-200 dark:border-white/10'
+                  }`}
+                  title={isFilterPanelOpen ? 'Contraer filtros' : 'Desplegar filtros'}
+                >
+                  <Filter className="w-3.5 h-3.5" />
+                  <span>Filtros</span>
+                  {isFilterPanelOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Chips cuando está contraído pero hay filtros activos */}
+            {!isFilterPanelOpen && activeFiltersCount > 0 && (
+              <div className="pt-2.5 mt-2.5 border-t border-purple-100 dark:border-white/10 flex items-center gap-1.5 flex-wrap text-xs animate-in fade-in duration-150">
+                <span className="text-[11px] font-bold text-gray-500">Filtros activos:</span>
+                {filters.periodo !== 'mes' && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">
+                    Período: {filters.periodo}
+                    <button type="button" onClick={() => setFilters(p => ({ ...p, periodo: 'mes' }))} className="hover:text-purple-950 cursor-pointer">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {filters.ejecutivoId !== 'todos' && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">
+                    Ejecutivo: {MOCK_EXECUTIVES.find(e => e.id === filters.ejecutivoId)?.nombre || filters.ejecutivoId}
+                    <button type="button" onClick={() => setFilters(p => ({ ...p, ejecutivoId: 'todos' }))} className="hover:text-purple-950 cursor-pointer">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {filters.clienteId && filters.clienteId !== 'todos' && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">
+                    Cliente: {MOCK_CLIENTS.find(c => c.id === filters.clienteId)?.razonSocial || filters.clienteId}
+                    <button type="button" onClick={() => setFilters(p => ({ ...p, clienteId: 'todos' }))} className="hover:text-purple-950 cursor-pointer">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {filters.estadoProforma !== 'todos' && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">
+                    Estado: {filters.estadoProforma}
+                    <button type="button" onClick={() => setFilters(p => ({ ...p, estadoProforma: 'todos' }))} className="hover:text-purple-950 cursor-pointer">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {filters.version !== 'todos' && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">
+                    Versión: {filters.version}
+                    <button type="button" onClick={() => setFilters(p => ({ ...p, version: 'todos' }))} className="hover:text-purple-950 cursor-pointer">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {filters.motivoRechazo !== 'todos' && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">
+                    Motivo: {filters.motivoRechazo}
+                    <button type="button" onClick={() => setFilters(p => ({ ...p, motivoRechazo: 'todos' }))} className="hover:text-purple-950 cursor-pointer">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {searchTerm.trim() !== '' && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">
+                    Búsqueda: &ldquo;{searchTerm}&rdquo;
+                    <button type="button" onClick={() => setSearchTerm('')} className="hover:text-purple-950 cursor-pointer">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Contenido desplegable con efecto sutil */}
+            {isFilterPanelOpen && (
+              <div className="pt-3 mt-2.5 border-t border-purple-100 dark:border-white/10 space-y-3 animate-in fade-in zoom-in-98 duration-200">
+                {/* Grid de Filtros */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
+                  {/* 1. Periodo */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                      <Calendar className="w-3 h-3 text-purple-600" />
+                      <span>Período</span>
+                    </label>
+                    <select
+                      value={filters.periodo}
+                      onChange={(e) => setFilters((prev) => ({ ...prev, periodo: e.target.value as any }))}
+                      className="w-full px-2.5 py-1.5 text-xs bg-gray-50 dark:bg-slate-800 border border-purple-200/80 dark:border-white/10 rounded-xl font-normal text-gray-500 dark:text-gray-400 outline-none focus:border-purple-500 shadow-2xs cursor-pointer"
+                    >
+                      <option value="hoy" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">Hoy</option>
+                      <option value="semana" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">Esta Semana</option>
+                      <option value="mes" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">Este Mes</option>
+                      <option value="trimestre" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">Tercer Trimestre (Q3)</option>
+                      <option value="ano" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">Año 2026</option>
+                      <option value="todos" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">Todo el Historial</option>
+                    </select>
+                  </div>
+
+                  {/* 2. Ejecutivo */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                      <Users className="w-3 h-3 text-purple-600" />
+                      <span>Ejecutivo</span>
+                    </label>
+                    <select
+                      value={filters.ejecutivoId}
+                      onChange={(e) => setFilters((prev) => ({ ...prev, ejecutivoId: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 text-xs bg-gray-50 dark:bg-slate-800 border border-purple-200/80 dark:border-white/10 rounded-xl font-normal text-gray-500 dark:text-gray-400 outline-none focus:border-purple-500 shadow-2xs cursor-pointer truncate"
+                    >
+                      <option value="todos" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">Todos los ejecutivos</option>
+                      {MOCK_EXECUTIVES.map((exe) => (
+                        <option key={exe.id} value={exe.id} className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">
+                          {exe.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 3. Cliente */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                      <Building2 className="w-3 h-3 text-purple-600" />
+                      <span>Cliente</span>
+                    </label>
+                    <select
+                      value={filters.clienteId || 'todos'}
+                      onChange={(e) => setFilters((prev) => ({ ...prev, clienteId: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 text-xs bg-gray-50 dark:bg-slate-800 border border-purple-200/80 dark:border-white/10 rounded-xl font-normal text-gray-500 dark:text-gray-400 outline-none focus:border-purple-500 shadow-2xs cursor-pointer truncate"
+                    >
+                      <option value="todos" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">Todos los clientes</option>
+                      {MOCK_CLIENTS.map((cli) => (
+                        <option key={cli.id} value={cli.id} className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">
+                          {cli.razonSocial}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 4. Estado Proforma */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                      <FileText className="w-3 h-3 text-purple-600" />
+                      <span>Estado proforma</span>
+                    </label>
+                    <select
+                      value={filters.estadoProforma}
+                      onChange={(e) => setFilters((prev) => ({ ...prev, estadoProforma: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 text-xs bg-gray-50 dark:bg-slate-800 border border-purple-200/80 dark:border-white/10 rounded-xl font-normal text-gray-500 dark:text-gray-400 outline-none focus:border-purple-500 shadow-2xs cursor-pointer truncate"
+                    >
+                      <option value="todos" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">Todos los estados</option>
+                      <option value="Pendiente" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">Pendiente</option>
+                      <option value="Pendiente de validación" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">Pendiente de validación V°B°</option>
+                      <option value="Aprobada por Cliente" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">Aprobada por cliente</option>
+                      <option value="Facturado" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">Facturado</option>
+                      <option value="Rechazada v1" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">Rechazada v1</option>
+                      <option value="Derivada a KAM" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">Derivada a KAM</option>
+                    </select>
+                  </div>
+
+                  {/* 5. Versión */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                      <Layers className="w-3 h-3 text-purple-600" />
+                      <span>Versión</span>
+                    </label>
+                    <select
+                      value={filters.version}
+                      onChange={(e) => setFilters((prev) => ({ ...prev, version: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 text-xs bg-gray-50 dark:bg-slate-800 border border-purple-200/80 dark:border-white/10 rounded-xl font-normal text-gray-500 dark:text-gray-400 outline-none focus:border-purple-500 shadow-2xs cursor-pointer"
+                    >
+                      <option value="todos" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">Todas las versiones</option>
+                      <option value="v1" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">v1 (Original)</option>
+                      <option value="v2" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">v2 (Ajustada)</option>
+                      <option value="v3" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">v3 (Crítica)</option>
+                    </select>
+                  </div>
+
+                  {/* 6. Motivo de Rechazo */}
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3 text-purple-600" />
+                      <span>Motivo de rechazo</span>
+                    </label>
+                    <select
+                      value={filters.motivoRechazo}
+                      onChange={(e) => setFilters((prev) => ({ ...prev, motivoRechazo: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 text-xs bg-gray-50 dark:bg-slate-800 border border-purple-200/80 dark:border-white/10 rounded-xl font-normal text-gray-500 dark:text-gray-400 outline-none focus:border-purple-500 shadow-2xs cursor-pointer truncate"
+                    >
+                      <option value="todos" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">Todos los motivos</option>
+                      <option value="Diferencia en recubitaje / medidas de SKUs" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">Diferencia en recubitaje</option>
+                      <option value="Inconsistencia en Tarifas / Descuentos negociados" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">Inconsistencia en tarifas</option>
+                      <option value="Discrepancia comercial no resuelta en V3" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-slate-900">Discrepancia en V3</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Input Búsqueda en tiempo real */}
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar en tiempo real por RUT, Razón Social del Cliente, ID de Proforma o Ejecutivo..."
+                    className="w-full pl-9 pr-8 py-2 text-xs bg-gray-50 dark:bg-slate-800 border border-purple-200/80 dark:border-white/10 rounded-xl font-normal text-gray-600 dark:text-gray-300 placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:font-normal focus:border-purple-500 focus:ring-1 focus:ring-purple-500/20 outline-none shadow-2xs"
+                  />
+                  {searchTerm && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchTerm('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5 rounded-full hover:bg-gray-200/60 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                      title="Borrar búsqueda"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* 1. Tarjetas Principales de KPIs Interactivas */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
             {/* KPI 1: Totales */}
@@ -817,14 +1104,14 @@ export function JefeDashboard() {
               <div className="w-full overflow-x-auto">
                 <table className="w-full min-w-[850px] text-left border-collapse text-xs">
                   <thead>
-                    <tr className="bg-purple-50/60 dark:bg-purple-950/40 border-b border-purple-100 dark:border-white/5 text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                    <tr className="bg-purple-50/60 dark:bg-purple-950/40 border-b border-purple-100 dark:border-white/5 text-[10px] font-bold text-gray-600 dark:text-gray-400">
                       <th className="py-2.5 px-3">Proforma ID</th>
-                      <th className="py-2.5 px-2">Cliente / Razón Social</th>
+                      <th className="py-2.5 px-2">Cliente / razón social</th>
                       <th className="py-2.5 px-2">Ejecutivo</th>
                       <th className="py-2.5 px-2 text-right">Monto</th>
                       <th className="py-2.5 px-1 text-center">Versión</th>
-                      <th className="py-2.5 px-1 text-center">Estado Comercial</th>
-                      <th className="py-2.5 px-2">Motivo / Observaciones</th>
+                      <th className="py-2.5 px-1 text-center">Estado comercial</th>
+                      <th className="py-2.5 px-2">Motivo / observaciones</th>
                       <th className="py-2.5 px-3 text-right">Acción</th>
                     </tr>
                   </thead>
@@ -879,111 +1166,7 @@ export function JefeDashboard() {
             </div>
           )}
 
-          {/* 3. BARRA DE FILTROS DINÁMICOS DEL DASHBOARD (Ubicada debajo de las cards) */}
-          <div className="bg-white/95 dark:bg-slate-900/95 rounded-2xl border border-purple-100/90 dark:border-white/10 p-5 shadow-xs space-y-3.5">
-            <div className="flex items-center justify-between border-b border-gray-100 dark:border-white/5 pb-2.5">
-              <div className="flex items-center gap-2 text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
-                <SlidersHorizontal className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                Filtros Dinámicos de Proformas
-              </div>
-              <button
-                onClick={resetFilters}
-                className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 font-semibold cursor-pointer flex items-center gap-1.5 transition-colors"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                Restablecer filtros
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {/* Filtro por Ejecutivo */}
-              <div>
-                <label className="text-[11px] font-semibold text-gray-600 dark:text-gray-400 block mb-1">
-                  Ejecutivo Responsable:
-                </label>
-                <select
-                  value={filters.ejecutivoId}
-                  onChange={(e) => setFilters({ ...filters, ejecutivoId: e.target.value })}
-                  className="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-xl text-gray-800 dark:text-gray-200 outline-none cursor-pointer focus:border-purple-600 focus:ring-1 focus:ring-purple-600/20"
-                >
-                  <option value="todos">Todos los Ejecutivos</option>
-                  {MOCK_EXECUTIVES.map((exe) => (
-                    <option key={exe.id} value={exe.id}>
-                      {exe.nombre} ({exe.clientesAsignadosCount} clientes)
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Filtro por Estado Proforma */}
-              <div>
-                <label className="text-[11px] font-semibold text-gray-600 dark:text-gray-400 block mb-1">
-                  Estado de Proforma:
-                </label>
-                <select
-                  value={filters.estadoProforma}
-                  onChange={(e) => setFilters({ ...filters, estadoProforma: e.target.value })}
-                  className="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-xl text-gray-800 dark:text-gray-200 outline-none cursor-pointer focus:border-purple-600 focus:ring-1 focus:ring-purple-600/20"
-                >
-                  <option value="todos">Todos los Estados</option>
-                  <option value="Pendiente">Pendiente (Enviada a Cliente)</option>
-                  <option value="Pendiente de validación">Pendiente de Validación V°B°</option>
-                  <option value="Aprobada por Cliente">Aprobada por Cliente</option>
-                  <option value="Facturado">Facturado</option>
-                  <option value="Rechazada v1">Rechazada v1</option>
-                  <option value="Derivada a KAM">Derivada a KAM</option>
-                </select>
-              </div>
-
-              {/* Filtro por Versión */}
-              <div>
-                <label className="text-[11px] font-semibold text-gray-600 dark:text-gray-400 block mb-1">
-                  Versión:
-                </label>
-                <select
-                  value={filters.version}
-                  onChange={(e) => setFilters({ ...filters, version: e.target.value })}
-                  className="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-xl text-gray-800 dark:text-gray-200 outline-none cursor-pointer focus:border-purple-600 focus:ring-1 focus:ring-purple-600/20"
-                >
-                  <option value="todos">Todas las Versiones</option>
-                  <option value="v1">Versión 1 (Original)</option>
-                  <option value="v2">Versión 2 (Ajustada)</option>
-                  <option value="v3">Versión 3 (Crítica)</option>
-                </select>
-              </div>
-
-              {/* Filtro por Causa de Rechazo */}
-              <div>
-                <label className="text-[11px] font-semibold text-gray-600 dark:text-gray-400 block mb-1">
-                  Motivo de Rechazo:
-                </label>
-                <select
-                  value={filters.motivoRechazo}
-                  onChange={(e) => setFilters({ ...filters, motivoRechazo: e.target.value })}
-                  className="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-xl text-gray-800 dark:text-gray-200 outline-none cursor-pointer focus:border-purple-600 focus:ring-1 focus:ring-purple-600/20"
-                >
-                  <option value="todos">Todos los Motivos</option>
-                  <option value="Diferencia en recubitaje / medidas de SKUs">Diferencia en recubitaje / medidas</option>
-                  <option value="Inconsistencia en Tarifas / Descuentos negociados">Inconsistencia en Tarifas</option>
-                  <option value="Discrepancia comercial no resuelta en V3">Discrepancia comercial no resuelta</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Input Búsqueda RUT / Cliente */}
-            <div className="relative mt-2">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Buscar en tiempo real por RUT, Razón Social del Cliente, ID de Proforma o Ejecutivo..."
-                className="w-full pl-9 pr-4 py-2 text-xs bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-xl focus:border-purple-600 focus:ring-1 focus:ring-purple-600/20 outline-none text-gray-800 dark:text-gray-200"
-              />
-            </div>
-          </div>
-
-          {/* 4. TABLA DINÁMICA DE RESULTADOS DE LOS FILTROS */}
+          {/* 3. TABLA DINÁMICA DE RESULTADOS DE LOS FILTROS */}
           <div className="bg-white/95 dark:bg-slate-900/95 rounded-2xl border border-purple-100/90 dark:border-white/10 overflow-hidden shadow-xs">
             <div className="p-4 border-b border-gray-100 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-purple-50/30 dark:bg-purple-950/10">
               <div>
@@ -1003,15 +1186,15 @@ export function JefeDashboard() {
             <div className="w-full overflow-x-auto">
               <table className="w-full min-w-[900px] text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-purple-50/60 dark:bg-purple-950/40 border-b border-purple-100 dark:border-white/5 text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                  <tr className="bg-purple-50/60 dark:bg-purple-950/40 border-b border-purple-100 dark:border-white/5 text-[10px] font-bold text-gray-600 dark:text-gray-400">
                     <th className="py-3 px-3">Proforma ID</th>
-                    <th className="py-3 px-2">Cliente / Razón Social</th>
-                    <th className="py-3 px-2">Ejecutivo Responsable</th>
+                    <th className="py-3 px-2">Cliente / razón social</th>
+                    <th className="py-3 px-2">Ejecutivo responsable</th>
                     <th className="py-3 px-2 text-right">Monto</th>
                     <th className="py-3 px-1 text-center">Versión</th>
                     <th className="py-3 px-1 text-center">Supervisión V°B°</th>
-                    <th className="py-3 px-1 text-center">Estado Comercial</th>
-                    <th className="py-3 px-2">Motivo / Alertas</th>
+                    <th className="py-3 px-1 text-center">Estado comercial</th>
+                    <th className="py-3 px-2">Motivo / alertas</th>
                     <th className="py-3 px-3 text-right">Acción</th>
                   </tr>
                 </thead>
@@ -1120,7 +1303,7 @@ export function JefeDashboard() {
           <div className="w-full overflow-x-auto">
             <table className="w-full min-w-[980px] text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-purple-50/60 dark:bg-purple-950/40 border-b border-purple-100 dark:border-white/5 text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                <tr className="bg-purple-50/60 dark:bg-purple-950/40 border-b border-purple-100 dark:border-white/5 text-[10px] font-bold text-gray-600 dark:text-gray-400">
                   <th className="py-2.5 px-3 min-w-[170px]">
                     <Tooltip content="Ejecutivo de Facturación Especial asignado">
                       <span>Ejecutivo</span>
@@ -1173,12 +1356,12 @@ export function JefeDashboard() {
                   </th>
                   <th className="py-2.5 px-2 text-center">
                     <Tooltip content="Tiempo promedio de generación de proformas (días)">
-                      <span>T. Gen.</span>
+                      <span>T. gen.</span>
                     </Tooltip>
                   </th>
                   <th className="py-2.5 px-2 text-center">
                     <Tooltip content="Tiempo promedio de aprobación del cliente (días)">
-                      <span>T. Aprob.</span>
+                      <span>T. aprob.</span>
                     </Tooltip>
                   </th>
                   <th className="py-2.5 px-2 text-center">
@@ -1312,9 +1495,9 @@ export function JefeDashboard() {
                 <col className="w-[7%]" />
               </colgroup>
               <thead>
-                <tr className="bg-purple-50/60 dark:bg-purple-950/40 border-b border-purple-100 dark:border-white/5 text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-                  <th className="py-2.5 px-3">Cliente / Razón Social</th>
-                  <th className="py-2.5 px-1.5">RUT</th>
+                <tr className="bg-purple-50/60 dark:bg-purple-950/40 border-b border-purple-100 dark:border-white/5 text-[10px] font-bold text-gray-600 dark:text-gray-400">
+                  <th className="py-2.5 px-3">Cliente / razón social</th>
+                  <th className="py-2.5 px-1.5">Rut</th>
                   <th className="py-2.5 px-1.5">Ejecutivo</th>
                   <th className="py-2.5 px-1 text-center">Total</th>
                   <th className="py-2.5 px-1 text-center">Aprob.</th>
@@ -1322,7 +1505,7 @@ export function JefeDashboard() {
                   <th className="py-2.5 px-1 text-center">% Aprob.</th>
                   <th className="py-2.5 px-1 text-center">Vers.</th>
                   <th className="py-2.5 px-1 text-center">Reproc.</th>
-                  <th className="py-2.5 px-1 text-center">T. Aprob.</th>
+                  <th className="py-2.5 px-1 text-center">T. aprob.</th>
                   <th className="py-2.5 px-1 text-center">Estado</th>
                 </tr>
               </thead>
@@ -1435,14 +1618,14 @@ export function JefeDashboard() {
                 <col className="w-[12%]" />
               </colgroup>
               <thead>
-                <tr className="bg-purple-50/60 dark:bg-purple-950/40 border-b border-purple-100 dark:border-white/5 text-[10px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                <tr className="bg-purple-50/60 dark:bg-purple-950/40 border-b border-purple-100 dark:border-white/5 text-[10px] font-bold text-gray-600 dark:text-gray-400">
                   <th className="py-2.5 px-3">Proforma ID</th>
-                  <th className="py-2.5 px-2">Cliente / Razón Social</th>
+                  <th className="py-2.5 px-2">Cliente / razón social</th>
                   <th className="py-2.5 px-2">Ejecutivo</th>
                   <th className="py-2.5 px-2 text-right">Monto</th>
                   <th className="py-2.5 px-1 text-center">Versión</th>
                   <th className="py-2.5 px-1 text-center">Supervisión V°B°</th>
-                  <th className="py-2.5 px-1 text-center">Estado Comercial</th>
+                  <th className="py-2.5 px-1 text-center">Estado comercial</th>
                   <th className="py-2.5 px-3 text-right">Acción</th>
                 </tr>
               </thead>

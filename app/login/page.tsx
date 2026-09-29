@@ -40,13 +40,14 @@ export default function LoginPage() {
     setErrorMsg('');
 
     const cleanEmail = email.trim().toLowerCase();
+    const isPricing = cleanEmail.includes('pricing');
     const isJefe =
       cleanEmail.includes('jefe') ||
       cleanEmail.includes('jefatura');
-    const roleToAssign: Role = isJefe ? 'Jefatura' : 'Ejecutivo';
+    const roleToAssign: Role = isPricing ? 'Pricing' : isJefe ? 'Jefatura' : 'Ejecutivo';
 
     const res = login(
-      cleanEmail || (isJefe ? 'jefe@starken.cl' : 'ejecutivo@starken.cl'),
+      cleanEmail || (isPricing ? 'pricing@starken.cl' : isJefe ? 'jefe@starken.cl' : 'ejecutivo@starken.cl'),
       password,
       roleToAssign
     );
@@ -163,7 +164,25 @@ export default function LoginPage() {
               <span className="text-[11px] font-bold uppercase tracking-wider text-purple-800 block mb-2">
                 Accesos rápidos de prueba:
               </span>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('pricing@starken.cl');
+                    setPassword('123456');
+                  }}
+                  className={`text-left p-2 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
+                    email.includes('pricing')
+                      ? 'bg-purple-600 text-white border-purple-700 shadow-xs'
+                      : 'bg-white text-gray-700 border-purple-200 hover:bg-purple-100/50'
+                  }`}
+                >
+                  <div className="font-bold flex items-center gap-1">🏷️ Pricing</div>
+                  <div className={`text-[10px] truncate ${email.includes('pricing') ? 'text-purple-100' : 'text-gray-500'}`}>
+                    pricing@starken.cl
+                  </div>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => {
@@ -176,7 +195,7 @@ export default function LoginPage() {
                       : 'bg-white text-gray-700 border-purple-200 hover:bg-purple-100/50'
                   }`}
                 >
-                  <div className="font-bold">👔 Jefe Facturación</div>
+                  <div className="font-bold flex items-center gap-1">👔 Jefatura</div>
                   <div className={`text-[10px] truncate ${email.includes('jefe') ? 'text-purple-100' : 'text-gray-500'}`}>
                     jefe@starken.cl
                   </div>
@@ -189,13 +208,13 @@ export default function LoginPage() {
                     setPassword('123456');
                   }}
                   className={`text-left p-2 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
-                    !email.includes('jefe') && email
+                    !email.includes('jefe') && !email.includes('pricing') && email
                       ? 'bg-purple-600 text-white border-purple-700 shadow-xs'
                       : 'bg-white text-gray-700 border-purple-200 hover:bg-purple-100/50'
                   }`}
                 >
-                  <div className="font-bold">📋 Ejecutivo Facturación</div>
-                  <div className={`text-[10px] truncate ${!email.includes('jefe') && email ? 'text-purple-100' : 'text-gray-500'}`}>
+                  <div className="font-bold flex items-center gap-1">📋 Ejecutivo</div>
+                  <div className={`text-[10px] truncate ${!email.includes('jefe') && !email.includes('pricing') && email ? 'text-purple-100' : 'text-gray-500'}`}>
                     ejecutivo@starken.cl
                   </div>
                 </button>

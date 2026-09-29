@@ -644,7 +644,21 @@ export default function NuevaProformaPage() {
                   placeholder="Escribe el RUT o nombre (ej: Cencosud, Bubba, Falabella, Santander, 81.201.000)..."
                   className="w-full h-11 pl-4 pr-10 bg-purple-50/40 dark:bg-white/5 border border-purple-900/20 dark:border-white/10 rounded-lg text-body text-gray-900 dark:text-gray-100 font-medium focus:border-purple-600 focus:bg-white dark:focus:bg-slate-800 outline-none transition-all shadow-xs"
                 />
-                <Building2 className={`w-4 h-4 absolute right-3 top-3.5 ${theme.accentText} pointer-events-none`} />
+                {searchTerm ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchTerm('');
+                      setShowDropdown(false);
+                    }}
+                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5 rounded-full hover:bg-gray-200/60 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                    title="Borrar búsqueda"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <Building2 className={`w-4 h-4 absolute right-3 top-3.5 ${theme.accentText} pointer-events-none`} />
+                )}
 
                 {/* Autocomplete Dropdown */}
                 {showDropdown && filteredClientes.length > 0 && (

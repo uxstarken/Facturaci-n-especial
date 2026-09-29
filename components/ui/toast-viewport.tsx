@@ -68,25 +68,27 @@ export function ToastViewport() {
           <div
             key={t.id}
             role="status"
-            className={`animate-toast-in pointer-events-auto flex items-start gap-3 p-3.5 rounded-xl shadow-xl transition-all ${style.bg} ${style.border}`}
+            className={`animate-toast-in pointer-events-auto flex items-center gap-3 p-3.5 rounded-xl shadow-xl transition-all ${style.bg} ${style.border}`}
           >
             <div className={`w-9 h-9 rounded-xl ${style.iconBg} flex items-center justify-center shrink-0 shadow-2xs`}>
               <Icon className={`w-5 h-5 ${style.iconColor}`} />
             </div>
-            <div className="flex-1 min-w-0 pr-1">
+            <div className="flex-1 min-w-0 pr-1 flex flex-col justify-center">
               {t.title && (
                 <h4 className={`text-body font-bold leading-tight ${style.titleColor}`}>
                   {t.title}
                 </h4>
               )}
-              <p className={`text-caption font-medium leading-snug ${style.textColor} ${t.title ? 'mt-0.5' : ''}`}>
-                {t.message}
-              </p>
+              {t.message && (
+                <p className={`text-caption font-medium leading-snug ${style.textColor} ${t.title ? 'mt-0.5' : ''}`}>
+                  {t.message}
+                </p>
+              )}
             </div>
             <button
               type="button"
               onClick={() => dismissToast(t.id)}
-              className={`shrink-0 p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors ${style.textColor}`}
+              className={`shrink-0 p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors ${style.textColor} self-center`}
               aria-label="Cerrar notificación"
             >
               <X className="w-4 h-4" />

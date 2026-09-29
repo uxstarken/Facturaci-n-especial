@@ -25,7 +25,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className={`flex min-h-screen bg-gradient-to-br ${theme.mainBgGradient} overflow-x-hidden`}>
       <Sidebar />
-      <div className="ml-[230px] flex-1 flex flex-col min-h-screen min-w-0 max-w-[calc(100vw-230px)] overflow-x-hidden">
+      <div className="ml-[250px] flex-1 flex flex-col min-h-screen min-w-0 max-w-[calc(100vw-250px)] overflow-x-hidden">
         <Topbar />
         <main className="p-5 md:p-6 flex-1 min-w-0 overflow-x-hidden">{children}</main>
       </div>

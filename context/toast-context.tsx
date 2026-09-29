@@ -13,7 +13,7 @@ export interface ToastItem {
 
 interface ToastContextType {
   toasts: ToastItem[];
-  showToast: (message: string, variant?: ToastVariant, duration?: number, title?: string) => void;
+  showToast: (messageOrTitle: string, variantOrMessage?: any, durationOrVariant?: any, optionalTitle?: string) => void;
   dismissToast: (id: string) => void;
 }
 
@@ -29,7 +29,32 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const showToast = useCallback(
-    (message: string, variant: ToastVariant = 'info', duration: number = DEFAULT_DURATION, title?: string) => {
+    (messageOrTitle: string, variantOrMessage: any = 'info', durationOrVariant: any = DEFAULT_DURATION, optionalTitle?: string) => {
+      let title: string | undefined = optionalTitle;
+      let message: string = messageOrTitle;
+      let variant: ToastVariant = 'info';
+      let duration: number = DEFAULT_DURATION;
+
+      const validVariants: ToastVariant[] = ['success', 'error', 'info', 'wellbeing', 'warning'];
+
+      if (typeof variantOrMessage === 'string' && validVariants.includes(variantOrMessage as ToastVariant)) {
+        // Form: showToast(message, 'success', 4000, 'Title')
+        variant = variantOrMessage as ToastVariant;
+        message = messageOrTitle;
+        if (typeof durationOrVariant === 'number') duration = durationOrVariant;
+        title = optionalTitle;
+      } else if (typeof variantOrMessage === 'string' && typeof durationOrVariant === 'string' && validVariants.includes(durationOrVariant as ToastVariant)) {
+        // Form: showToast('Title', 'Message', 'success')
+        title = messageOrTitle;
+        message = variantOrMessage;
+        variant = durationOrVariant as ToastVariant;
+      } else if (typeof variantOrMessage === 'string') {
+        // Form: showToast('Title', 'Message')
+        title = messageOrTitle;
+        message = variantOrMessage;
+        variant = 'info';
+      }
+
       const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       setToasts((prev) => [...prev, { id, variant, title, message }]);
       if (duration > 0) {

@@ -25,6 +25,7 @@ import {
   Zap,
   CheckSquare,
   RotateCcw,
+  X,
 } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { useTheme } from '@/context/theme-context';
@@ -35,18 +36,29 @@ import { formatCurrency } from '@/lib/utils';
 import { RespuestaClienteModal } from '@/components/proformas/RespuestaClienteModal';
 import { RegistrarFacturaModal } from '@/components/proformas/RegistrarFacturaModal';
 import { JefeDashboard } from '@/components/dashboard/JefeDashboard';
+import { PricingDashboard } from '@/components/dashboard/PricingDashboard';
 
 type KpiFilterType = 'todos' | 'pendientes' | 'rechazadas' | 'pricing' | 'aprobadas' | 'kam';
 
 function DashboardHomeContent() {
   const { user } = useAuth();
-  const { theme } = useTheme();
-  const { showToast } = useToast();
-  const searchParams = useSearchParams();
+
+  if (user?.role === 'Pricing') {
+    return <PricingDashboard />;
+  }
 
   if (user?.role === 'Jefatura') {
     return <JefeDashboard />;
   }
+
+  return <EjecutivoDashboardContent />;
+}
+
+function EjecutivoDashboardContent() {
+  const { user } = useAuth();
+  const { theme } = useTheme();
+  const { showToast } = useToast();
+  const searchParams = useSearchParams();
 
   const [proformas, setProformas] = useState<Proforma[]>(MOCK_PROFORMAS);
   const [searchTerm, setSearchTerm] = useState('');
@@ -688,8 +700,18 @@ function DashboardHomeContent() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Buscar por cliente o N°..."
-                className="pl-8 pr-3 py-1.5 bg-white dark:bg-slate-900/50 border border-purple-900/15 dark:border-white/10 rounded-lg text-body text-gray-800 dark:text-gray-200 outline-none focus:border-purple-600 shadow-xs text-caption"
+                className="pl-8 pr-8 py-1.5 bg-white dark:bg-slate-900/50 border border-purple-900/15 dark:border-white/10 rounded-lg text-body text-gray-800 dark:text-gray-200 outline-none focus:border-purple-600 shadow-xs text-caption"
               />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5 rounded-full hover:bg-gray-200/60 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                  title="Borrar búsqueda"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
             <Link
@@ -1020,7 +1042,7 @@ function DashboardHomeContent() {
                             title={
                               isExpanded
                                 ? 'Ocultar historial de versiones'
-                                : `Ver historial de versiones (${versionesLista.length} versión/es)`
+                                : `Ver historial de versiones (${versionesLista.length} ${versionesLista.length === 1 ? 'versión' : 'versiones'})`
                             }
                             className={`px-2.5 py-1.5 rounded-lg border transition-all inline-flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95 text-micro font-extrabold ${
                               isExpanded

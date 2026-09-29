@@ -1,4 +1,4 @@
-export type Role = 'Ejecutivo' | 'Analista' | 'Jefatura' | 'Administrador' | 'Gerencia';
+export type Role = 'Ejecutivo' | 'Analista' | 'Jefatura' | 'Administrador' | 'Gerencia' | 'Pricing';
 
 export interface User {
   id: string;
@@ -47,9 +47,13 @@ export interface ProformaItem {
   descripcion: string;
   cantidad: number;
   tarifaBase: number;
+  tarifaEsperada?: number;
   descuentoPct: number;
+  descuentoEsperadoPct?: number;
   total: number;
   ajustadoEnV2?: boolean;
+  servicio?: string;
+  tramo?: string;
 }
 
 export interface VersionHistoryItem {
@@ -61,6 +65,7 @@ export interface VersionHistoryItem {
   usuarioResponsable?: string;
   motivo?: string;
   observaciones?: string;
+  observacionesPricing?: string;
   cambiosRealizados?: string[];
   respaldoCorreoUrl?: string;
   monto: number;
@@ -79,6 +84,8 @@ export interface Proforma {
   cuentaCorrienteNombre?: string;
   ejecutivoId?: string;
   ejecutivoNombre?: string;
+  kamId?: string;
+  kamNombre?: string;
   monto: number;
   montoFormatted: string;
   estado: ProformaEstado;
@@ -97,6 +104,45 @@ export interface Proforma {
   alertasElaboracion?: string[];
   tiempoGeneracionDias?: number;
   tiempoAprobacionDias?: number;
+
+  // Campos Pricing & Tarifas
+  servicio?: string;
+  tipoCliente?: string;
+  origen?: string;
+  destino?: string;
+  tipoEntrega?: 'Domicilio' | 'Sucursal' | 'Express' | 'Dedicado';
+  tarifaEsperada?: number;
+  tarifaAplicada?: number;
+  descuentoEsperadoPct?: number;
+  descuentoAplicadoPct?: number;
+  variacionTarifaPct?: number;
+  esExcepcionTarifaria?: boolean;
+  tipoExcepcion?: string;
+  motivoRechazoPricing?: string;
+  observacionesPricing?: string;
+  resolucionPricing?: 'Validada' | 'Corregida' | 'Rechazada_Definitiva' | 'Pendiente_KAM' | 'Pendiente_Revision';
+  fechaResolucionPricing?: string;
+  usuarioPricingResolucion?: string;
+  salesforceOpportunityId?: string;
+  salesforceSynced?: boolean;
+  requiereRevisionKAM?: boolean;
+}
+
+export interface GlobalPricingFiltersState {
+  periodo: 'hoy' | 'semana' | 'mes' | 'trimestre' | 'ano' | 'todos';
+  cliente: string;
+  rut: string;
+  cuentaCorriente: string;
+  kam: string;
+  ejecutivo: string;
+  servicio: string;
+  tipoCliente: string;
+  origen: string;
+  destino: string;
+  tipoEntrega: string;
+  motivoRechazo: string;
+  tipoExcepcion: string;
+  estadoProforma: string;
 }
 
 // -------------------------------------------------------------
@@ -134,11 +180,25 @@ export interface CondicionComercial {
   observaciones: string;
 }
 
+export interface CondicionTarifariaVigente {
+  id: string;
+  codigoServicio: string;
+  nombreServicio: string;
+  tarifaBaseContrato: number;
+  descuentoAutorizadoPct: number;
+  tarifaFinalCalculada: number;
+  vigenciaDesde: string;
+  vigenciaHasta: string;
+  aprobadoPorPricing: string;
+  tramo: string;
+  esExcepcion: boolean;
+}
+
 export interface HistorialModificacionCliente {
   id: string;
   fecha: string;
   usuario: string;
-  tipoModificacion: 'Asignación Ejecutivo' | 'Condición Comercial' | 'Datos Empresa' | 'Estado';
+  tipoModificacion: 'Asignación Ejecutivo' | 'Condición Comercial' | 'Datos Empresa' | 'Estado' | 'Ajuste Pricing';
   detalle: string;
   valorAnterior?: string;
   valorNuevo?: string;
@@ -169,10 +229,15 @@ export interface Client {
   cuentasCorrientes?: CuentaCorriente[]; // Cuentas disponibles (entre 1 y 9)
   ejecutivoId?: string; // Si es undefined -> Cliente sin ejecutivo asignado
   ejecutivoNombre?: string;
+  kamId?: string;
+  kamNombre?: string;
+  tipoCliente?: string;
   estado: 'Activo' | 'Inactivo';
   condicionesComerciales: CondicionComercial;
+  condicionesTarifarias?: CondicionTarifariaVigente[];
   proformasIds: string[];
   historialModificaciones: HistorialModificacionCliente[];
+  excepcionesActivasCount?: number;
   
   // KPIs específicos por cliente
   kpis: {
@@ -183,6 +248,12 @@ export interface Client {
     promedioVersiones: number;
     cantidadReprocesos: number;
     tiempoPromedioAprobacionDias: number;
+    tasaRechazoTarifa?: number;
+    cantidadExcepciones?: number;
+    tarifaPromedioAplicada?: number;
+    descuentoPromedioPct?: number;
+    variacionTarifaPct?: number;
+    solicitudesPricingCount?: number;
   };
 }
 
@@ -203,9 +274,18 @@ export interface AuditLog {
     | 'Cambio Condiciones Comerciales'
     | 'Envío Proforma'
     | 'Creación Nueva Versión'
-    | 'Cambio de Estado';
+    | 'Cambio de Estado'
+    | 'Resolución Pricing'
+    | 'Validación Tarifa'
+    | 'Excepción Aprobada'
+    | 'Excepción Rechazada'
+    | 'Solicitud a KAM'
+    | 'Sincronización Salesforce'
+    | string;
   recurso: string;
   objetoAfectado: string;
+  cliente?: string;
+  kam?: string;
   estadoAnterior?: string;
   estadoNuevo?: string;
   version?: string;
@@ -223,4 +303,88 @@ export interface DashboardFiltersState {
   version: string;
   resultadoAprobacion: string;
   motivoRechazo: string;
+}
+
+// -------------------------------------------------------------
+// MODELOS PARA ENCARGADO DE PRICING
+// -------------------------------------------------------------
+
+export interface KAM {
+  id: string;
+  nombre: string;
+  email: string;
+  telefono: string;
+  avatar: string;
+  carteraClientesCount: number;
+  proformasTotales: number;
+  proformasRechazadasTarifa: number;
+  tasaRechazoTarifario: number;
+  excepcionesSolicitadas: number;
+  excepcionesAprobadas: number;
+  excepcionesRechazadas: number;
+  cantidadReprocesos: number;
+  tiempoPromedioResolucionDias: number;
+  descuentoPromedioCarteraPct: number;
+  variacionPromedioTarifaPct: number;
+  clientesMayorIncidencia: string[];
+}
+
+export interface ExcepcionTarifaria {
+  id: string;
+  proformaId: string;
+  proformaCodigo: string;
+  clienteId: string;
+  clienteNombre: string;
+  rut: string;
+  cuentaCorrienteNumero: string;
+  kamId: string;
+  kamNombre: string;
+  ejecutivoNombre: string;
+  versionProforma: VersionProforma;
+  servicio: string;
+  tramo: string;
+  tarifaEstandar: number;
+  tarifaSolicitada: number;
+  descuentoEstandarPct: number;
+  descuentoSolicitadoPct: number;
+  impactoFinancieroEstimado: number;
+  justificacionKAM: string;
+  analisisPricing?: string;
+  observacionesPricing?: string;
+  estado: 'Pendiente_Revision' | 'Aprobada' | 'Rechazada' | 'Solicitud_KAM' | 'Corregida' | 'Pendiente_Pricing' | 'Solicitar_Modificacion';
+  fechaSolicitud: string;
+  fechaResolucion?: string;
+  usuarioResolucion?: string;
+  salesforceOpportunityId?: string;
+}
+
+export interface ComunicacionKAM {
+  id: string;
+  proformaId: string;
+  clienteNombre: string;
+  kamNombre: string;
+  usuarioPricing: string;
+  fechaEnvio: string;
+  asunto: string;
+  mensajePricing: string;
+  respuestaKAM?: string;
+  fechaRespuesta?: string;
+  estado: 'Esperando_Respuesta_KAM' | 'Respondida' | 'Resuelta';
+  prioridad: 'Alta' | 'Media' | 'Baja';
+  salesforceOpportunityId?: string;
+}
+
+export interface SalesforceOpportunity {
+  opportunityId: string;
+  opportunityName: string;
+  accountName: string;
+  rut: string;
+  kamName: string;
+  amount: number;
+  stage: 'Propuesta' | 'Negociación Tarifaria' | 'Cerrada Ganada' | 'Revisión Pricing';
+  contractType: string;
+  tarifarioAcordado: string;
+  descuentoMaximoAutorizado: number;
+  lastSyncDate: string;
+  syncStatus: 'Sincronizado' | 'Pendiente' | 'Discrepancia';
 }

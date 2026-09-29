@@ -53,17 +53,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     const cleanEmail = email.trim().toLowerCase();
     
-    // Regla inteligente:
+    // Regla inteligente de asignación de perfil:
+    // Si contiene "pricing" -> Pricing (Rodrigo Palma - Encargado de Pricing)
     // Si contiene "jefe" o "jefatura" -> Jefatura (Carlos Muñoz - Jefe de Facturación Especial)
     // De lo contrario -> Ejecutivo (Ana Valenzuela)
+    const isPricing = cleanEmail.includes('pricing');
     const isJefe = cleanEmail.includes('jefe') || cleanEmail.includes('jefatura');
-    const assignedRole: Role = roleOverride || (isJefe ? 'Jefatura' : 'Ejecutivo');
+    
+    let assignedRole: Role = roleOverride || (isPricing ? 'Pricing' : isJefe ? 'Jefatura' : 'Ejecutivo');
 
-    const assignedName = assignedRole === 'Jefatura' ? 'Carlos Muñoz' : 'Ana Valenzuela';
-    const assignedEmail = cleanEmail || (assignedRole === 'Jefatura' ? 'jefe@starken.cl' : 'ejecutivo@starken.cl');
+    let assignedName = 'Ana Valenzuela';
+    let assignedEmail = cleanEmail || 'ejecutivo@starken.cl';
+    let assignedId = '1';
+
+    if (assignedRole === 'Pricing') {
+      assignedName = 'Rodrigo Palma';
+      assignedEmail = cleanEmail || 'pricing@starken.cl';
+      assignedId = '5';
+    } else if (assignedRole === 'Jefatura') {
+      assignedName = 'Carlos Muñoz';
+      assignedEmail = cleanEmail || 'jefe@starken.cl';
+      assignedId = '2';
+    }
 
     const loggedInUser: User = {
-      id: assignedRole === 'Jefatura' ? '2' : '1',
+      id: assignedId,
       name: assignedName,
       email: assignedEmail,
       role: assignedRole,

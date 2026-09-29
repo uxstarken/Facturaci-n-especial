@@ -257,20 +257,16 @@ export default function ClientesPage() {
     <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
       {/* Encabezado Principal */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/70 dark:bg-slate-900/70 p-5 rounded-2xl border border-purple-100 dark:border-white/10 shadow-xs backdrop-blur-md">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300">
-              Jefatura de Facturación Especial
-            </span>
-            <span className="text-xs text-gray-500">• Gestión y Supervisión</span>
+        <div className="flex items-start gap-3">
+          <Users className="w-7 h-7 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Administración de Clientes y Asignación de Ejecutivos
+            </h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
+              Supervisa la relación <span className="font-semibold text-purple-700 dark:text-purple-300">Cliente ➔ Ejecutivo responsable ➔ Proformas asociadas</span> y gestiona la cartera.
+            </p>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2.5">
-            <Users className="w-7 h-7 text-purple-600 dark:text-purple-400" />
-            Administración de Clientes y Asignación de Ejecutivos
-          </h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
-            Supervisa la relación <span className="font-semibold text-purple-700 dark:text-purple-300">Cliente ➔ Ejecutivo responsable ➔ Proformas asociadas</span> y gestiona la cartera.
-          </p>
         </div>
 
         {/* Resumen Métricas Rápidas */}
@@ -409,12 +405,14 @@ export default function ClientesPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Buscar por Razón Social, RUT (ej: 76.452.120-K), Cuenta Corriente o Ejecutivo..."
-              className="w-full pl-9 pr-4 py-2 text-xs bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-xl focus:border-purple-600 focus:ring-2 focus:ring-purple-600/10 outline-none transition-all"
+              className="w-full pl-9 pr-8 py-2 text-xs bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-xl focus:border-purple-600 focus:ring-2 focus:ring-purple-600/10 outline-none transition-all"
             />
             {searchTerm && (
               <button
+                type="button"
                 onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs cursor-pointer"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5 rounded-full hover:bg-gray-200/60 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                title="Borrar búsqueda"
               >
                 <X className="w-3.5 h-3.5" />
               </button>

@@ -16,9 +16,13 @@ export function Topbar() {
 
   const getBreadcrumbTitle = () => {
     if (pathname === '/proformas/nueva') return 'Crear proforma';
-    if (pathname === '/auditoria') return 'Auditorías';
-    if (pathname === '/perfil') return 'Mi perfil y personalización';
-    return 'Home';
+    if (pathname === '/auditoria') return 'Auditoría y trazabilidad';
+    if (pathname === '/clientes') return 'Gestión clientes y asignaciones';
+    if (pathname === '/aprobaciones') return 'Aprobaciones V2';
+    if (pathname === '/perfil') return 'Mi perfil y temas';
+    if (user?.role === 'Pricing') return 'Portal pricing y control tarifario';
+    if (user?.role === 'Jefatura') return 'Dashboard y KPIs de jefatura';
+    return 'Home operativo de facturación';
   };
 
   useEffect(() => {

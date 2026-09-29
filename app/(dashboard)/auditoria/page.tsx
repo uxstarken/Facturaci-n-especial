@@ -309,20 +309,16 @@ export default function AuditoriaPage() {
     <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/70 dark:bg-slate-900/70 p-5 rounded-2xl border border-purple-100 dark:border-white/10 shadow-xs backdrop-blur-md">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300">
-              Jefatura de Facturación Especial
-            </span>
-            <span className="text-xs text-gray-500">• Trazabilidad & Versionamiento</span>
+        <div className="flex items-start gap-3">
+          <ShieldAlert className="w-7 h-7 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Auditoría Operacional y Dashboard de Versionamiento
+            </h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
+              Bitácora inmutable de eventos sobre proformas, clientes y asignaciones.
+            </p>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2.5">
-            <ShieldAlert className="w-7 h-7 text-purple-600 dark:text-purple-400" />
-            Auditoría Operacional y Dashboard de Versionamiento
-          </h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
-            Bitácora inmutable de eventos sobre proformas, clientes y asignaciones, con KPIs de calidad y causas de reprocesos.
-          </p>
         </div>
 
         {/* Botón Exportar */}
@@ -375,8 +371,18 @@ export default function AuditoriaPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Buscar por usuario, proforma (PF-...), cliente o motivo..."
-                className="w-full pl-9 pr-4 py-2 text-xs bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-xl focus:border-purple-600 outline-none"
+                className="w-full pl-9 pr-8 py-2 text-xs bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-xl focus:border-purple-600 outline-none"
               />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5 rounded-full hover:bg-gray-200/60 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                  title="Borrar búsqueda"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
             <div className="md:col-span-3">
@@ -388,6 +394,11 @@ export default function AuditoriaPage() {
                 <option value="todos">Todas las acciones</option>
                 <option value="Aprobación">Aprobación de V°B°</option>
                 <option value="Rechazo">Rechazo de Versión</option>
+                <option value="Validación Tarifa">Validación Tarifa (Pricing)</option>
+                <option value="Excepción Aprobada">Excepción Aprobada</option>
+                <option value="Excepción Rechazada">Excepción Rechazada</option>
+                <option value="Solicitud a KAM">Solicitud a KAM</option>
+                <option value="Sincronización Salesforce">Sincronización Salesforce</option>
                 <option value="Reasignación de Ejecutivo">Reasignación de Ejecutivo</option>
                 <option value="Creación Nueva Versión">Creación Nueva Versión</option>
                 <option value="Cambio Condiciones Comerciales">Cambio Condiciones Comerciales</option>
@@ -403,6 +414,7 @@ export default function AuditoriaPage() {
                 className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-xl text-gray-700 dark:text-gray-200 focus:border-purple-600 outline-none cursor-pointer"
               >
                 <option value="todos">Todos los roles</option>
+                <option value="Pricing">Pricing</option>
                 <option value="Jefatura">Jefatura</option>
                 <option value="Ejecutivo">Ejecutivo</option>
                 <option value="Administrador">Administrador</option>
@@ -506,20 +518,19 @@ export default function AuditoriaPage() {
                             </span>
                           </td>
 
-                          {/* Transición de Estado */}
+                          {/* Transición de Estado en 2 líneas */}
                           <td className="py-3.5 px-2">
                             {log.estadoAnterior && log.estadoNuevo ? (
-                              <div className="flex items-center gap-1.5 text-[11px]">
-                                <span className="text-gray-500 line-through truncate max-w-[100px] block" title={log.estadoAnterior}>
+                              <div className="space-y-0.5 min-w-0">
+                                <span className="text-gray-400 dark:text-gray-500 line-through text-[10px] block leading-tight truncate max-w-[140px]" title={`Anterior: ${log.estadoAnterior}`}>
                                   {log.estadoAnterior}
                                 </span>
-                                <ArrowRight className="w-3 h-3 text-purple-500 shrink-0" />
-                                <span className="font-bold text-gray-900 dark:text-gray-100 truncate max-w-[120px] block" title={log.estadoNuevo}>
+                                <span className="font-bold text-purple-700 dark:text-purple-300 text-xs block leading-tight truncate max-w-[140px]" title={`Nuevo: ${log.estadoNuevo}`}>
                                   {log.estadoNuevo}
                                 </span>
                               </div>
                             ) : (
-                              <span className="text-gray-400 font-mono text-[11px]">—</span>
+                              <span className="text-gray-700 dark:text-gray-300 font-semibold text-xs">{log.estadoNuevo || '—'}</span>
                             )}
                           </td>
 
@@ -829,7 +840,7 @@ export default function AuditoriaPage() {
                       Expediente de Versiones — {versionModalData.proformaCode}
                     </h2>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300">
-                      {versionModalData.versions.length} {versionModalData.versions.length === 1 ? 'Versión' : 'Versiones'}
+                      {versionModalData.versions.length} {versionModalData.versions.length === 1 ? 'versión' : 'versiones'}
                     </span>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -1050,7 +1061,7 @@ export default function AuditoriaPage() {
             {/* Footer del Modal */}
             <div className="px-6 py-3.5 border-t border-gray-100 dark:border-white/10 bg-gray-50/80 dark:bg-slate-800/80 flex items-center justify-between gap-3">
               <span className="text-xs text-gray-500 dark:text-gray-400">
-                Total de {versionModalData.versions.length} versión(es) archivadas para trazabilidad de auditoría.
+                Total de {versionModalData.versions.length} {versionModalData.versions.length === 1 ? 'versión archivada' : 'versiones archivadas'} para trazabilidad de auditoría.
               </span>
 
               <div className="flex items-center gap-2">
